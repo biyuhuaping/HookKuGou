@@ -11,22 +11,22 @@
 
 
 //读取JSON配置文件
-static NSDictionary *loadConfigJson() {
-    static NSDictionary *cachedConfig = nil;
-    
-    // NSString *path = @"/var/mobile/Documents/new_config.json";
-    // NSData *data = [NSData dataWithContentsOfFile:path];
+static NSDictionary *configDict() {
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/.deviceFakeConfig.plist"];
-    NSData *data = [NSData dataWithContentsOfFile:path];
-    id json = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
-    return cachedConfig = [json isKindOfClass:[NSDictionary class]] ? json : @{};
+    NSURL *url = [NSURL fileURLWithPath:path];
+    NSDictionary *dic = [NSDictionary dictionaryWithContentsOfURL:url];
+    if (!dic) {
+        NSLog(@"[HOOK] Failed to load plist at %@", path);
+        dic = @{};
+    }
+    return dic[@"config"];
 }
 
 %hook UIDevice
 //idfv
 - (NSUUID *)identifierForVendor {
     NSUUID *orig = %orig;
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     NSString *customIDFV = config[@"idfv"];
     if (customIDFV.length){
         orig = [[NSUUID alloc] initWithUUIDString:customIDFV];
@@ -36,14 +36,14 @@ static NSDictionary *loadConfigJson() {
 }
 // 修改系统版本 17.6.1
 - (NSString *)systemVersion {
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     NSString *sVersion = config[@"osv"];
     NSLog(@"[HOOK]-systemVersion: %@", sVersion);
     return sVersion ?: %orig;
 }
 // 伪造 model, @"iPhone15,2"; 伪造成 @"iPhone10,2"
 - (NSString *)model {
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     NSString *modelStr = config[@"model"];
     NSLog(@"[HOOK]-model: %@", modelStr);
     return modelStr ?: %orig;
@@ -54,7 +54,7 @@ static NSDictionary *loadConfigJson() {
 //idfa
 - (NSUUID *)advertisingIdentifier {
     NSUUID *orig = %orig;
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     NSString *customIDFA = config[@"idfa"];
     if (customIDFA.length){
         orig = [[NSUUID alloc] initWithUUIDString:customIDFA];
@@ -69,7 +69,7 @@ static NSDictionary *loadConfigJson() {
 // 修改分辨率
 - (CGRect)bounds {
     CGRect value = %orig;
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     
     NSNumber *dx = config[@"dx"];
     NSNumber *dy = config[@"dy"];
@@ -88,7 +88,7 @@ static NSDictionary *loadConfigJson() {
 - (CGFloat)scale {
     CGFloat value = %orig;
    NSLog(@"[Hook] 原始屏幕缩放比例: %f", value);
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     NSNumber *configScale = config[@"scale"];
     if ([configScale isKindOfClass:[NSNumber class]]) {
         NSLog(@"[Hook] 屏幕缩放比例: %f", configScale.floatValue);
@@ -100,7 +100,7 @@ static NSDictionary *loadConfigJson() {
 // 修改物理分辨率
 - (CGRect)nativeBounds {
     CGRect value = %orig;
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     
     NSNumber *ndx = config[@"ndx"];
     NSNumber *ndy = config[@"ndy"];
@@ -108,43 +108,21 @@ static NSDictionary *loadConfigJson() {
     if ([ndx isKindOfClass:[NSNumber class]] && [ndy isKindOfClass:[NSNumber class]]) {
         CGFloat w = ndx.floatValue;
         CGFloat h = ndy.floatValue;
-       NSLog(@"[Hook] 配置伪造 nativeBounds: %.0f x %.0f", w, h);
+       	NSLog(@"[Hook] 配置伪造 nativeBounds: %.0f x %.0f", w, h);
         return CGRectMake(0, 0, w, h);
     }
     NSLog(@"[Hook] 使用原始 nativeBounds: %@", NSStringFromCGRect(value));
     return value;
 }
 
-// 屏幕亮度
-- (CGFloat)brightness {
-    CGFloat sbValue = %orig;
-    NSLog(@"[Hook] 原始屏幕亮度: %f", sbValue);
-    
-    NSDictionary *config = loadConfigJson();
-    NSNumber *configBrightness = config[@"brightness"];
-    if ([configBrightness isKindOfClass:[NSNumber class]]) {
-        CGFloat rawValue = configBrightness.floatValue;
-        // 保留两位小数
-        CGFloat rounded = round(rawValue * 100) / 100.0;
-        NSLog(@"[Hook] 配置亮度覆盖: %f -> %.2f", rawValue, rounded);
-        sbValue = rounded;
-    }
-    return sbValue;
-}
 %end
 
 
 %hook NSURLRequest
 - (NSDictionary *)allHTTPHeaderFields {
     NSMutableDictionary *headers = [%orig mutableCopy];
-    NSDictionary *config = loadConfigJson();
+    // NSDictionary *config = configDict();
     NSLog(@"[Hook] User-Agent原始数据：%@", headers);
-    NSString *customOSV = config[@"osv"]; // 例如 @"17.6.1"
-    if (customOSV) {
-        NSString *convertedOSV = [customOSV stringByReplacingOccurrencesOfString:@"." withString:@"_"]; // @"17_6_1"
-        headers[@"User-Agent"] = convertedOSV;
-        NSLog(@"[Hook] User-Agent：%@", headers);
-    }
     return headers;
 }
 %end
@@ -154,7 +132,7 @@ static NSDictionary *loadConfigJson() {
 %hookf(int, sysctlbyname, const char *name, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
     int ret = %orig;  // 先调用原始函数
     // 读取配置文件
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     // 伪造设备硬件型号
     if (strcmp(name, "hw.machine") == 0) {
         if (oldp) {
@@ -166,18 +144,18 @@ static NSDictionary *loadConfigJson() {
     }
 
     // 伪造设备屏幕分辨率
-    if (strcmp(name, "hw.resolution") == 0) {
-        if (oldp) {
-            // 从配置文件读取物理分辨率
-            NSDictionary *config = loadConfigJson();
-            int ndx = [config[@"ndx"] intValue] ?: 1170;  // 默认1170
-            int ndy = [config[@"ndy"] intValue] ?: 2532;  // 默认2532
-            NSString *res = [NSString stringWithFormat:@"%dx%d", ndx, ndy];
-            strncpy((char *)oldp, res.UTF8String, res.length);
-            NSLog(@"[Hook]sysctlbyname 修改设备分辨率: %@", res);
-        }
-        return ret;
-    }
+    // if (strcmp(name, "hw.resolution") == 0) {
+    //     if (oldp) {
+    //         // 从配置文件读取物理分辨率
+    //         NSDictionary *config = configDict();
+    //         int ndx = [config[@"ndx"] intValue] ?: 1170;  // 默认1170
+    //         int ndy = [config[@"ndy"] intValue] ?: 2532;  // 默认2532
+    //         NSString *res = [NSString stringWithFormat:@"%dx%d", ndx, ndy];
+    //         strncpy((char *)oldp, res.UTF8String, res.length);
+    //         NSLog(@"[Hook]sysctlbyname 修改设备分辨率: %@", res);
+    //     }
+    //     return ret;
+    // }
 
     // 伪造iOS版本
     // if (strcmp(name, "kern.osversion") == 0) {
@@ -197,9 +175,9 @@ static NSDictionary *loadConfigJson() {
 /*/修改 machine的系统版本号
 static int (*orig_sysctlbyname)(const char *, void *, size_t *, const void *, size_t);
 static int my_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, const void *newp, size_t newlen) {
-    NSDictionary *config = loadConfigJson();
+    NSDictionary *config = configDict();
     if (strcmp(name, "kern.osproductversion") == 0) {
-       NSDictionary *config = loadConfigJson();
+       NSDictionary *config = configDict();
         NSString *osv = config[@"osv"];  // "17.6.1"
         if (osv && [osv isKindOfClass:[NSString class]]) {
             const char *fake = [osv UTF8String];
@@ -290,5 +268,21 @@ static void hook_sysctlbyname_func() {
         completionHandler(data, response, error);
     };
     return %orig(request, customCompletion);
+}
+%end
+
+
+%hook NSBundle
+- (NSDictionary *)infoDictionary {
+    NSDictionary *originalDict = %orig;
+    NSMutableDictionary *mutableDict = [originalDict mutableCopy];
+
+    NSDictionary *config = configDict();
+    NSString *fakeOS = config[@"osv"];
+    if (fakeOS && mutableDict[@"DTPlatformVersion"]) {
+        NSLog(@"[HOOK] 替换 Info.plist 中的 DTPlatformVersion: %@", fakeOS);
+        mutableDict[@"DTPlatformVersion"] = fakeOS;
+    }
+    return [mutableDict copy];
 }
 %end
