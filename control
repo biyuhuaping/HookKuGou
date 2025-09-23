@@ -1,0 +1,9 @@
+Package: com.hook.kugou
+Name: HookKuGou
+Version: 0.0.8
+Architecture: iphoneos-arm
+Description: An awesome MobileSubstrate tweak!
+Maintainer: zb
+Author: zb
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000)
