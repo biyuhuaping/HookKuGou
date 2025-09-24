@@ -1,12 +1,10 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import <substrate.h>
 #import <sys/sysctl.h>   // 提供CTL_HW, HW_NCPU等常量
 #import <sys/time.h>     // 提供timeval结构
 #import <string.h>       // 提供strncpy等函数
 #import <AdSupport/AdSupport.h>  // 用于ASIdentifierManager
 #import <sys/utsname.h>     // 用于struct utsname结构体
-#import <CoreFoundation/CoreFoundation.h>  // 用于CFHTTPMessageRef
 #include <sys/stat.h>
 
 
