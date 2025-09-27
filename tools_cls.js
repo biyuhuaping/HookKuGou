@@ -82,7 +82,7 @@ function hookClassMethodsByOwnMethods(className) {
                     // this.parsedArgs = parsedArgs;
                     // safePrint("[+] Enter", className, m, "args:", this.parsedArgs.join(", "));
 
-                    // 打印调用栈
+                // 打印调用栈
                 var backtrace = Thread.backtrace(this.context, Backtracer.FUZZY)
                                     .map(DebugSymbol.fromAddress)
                                     .join("\n");

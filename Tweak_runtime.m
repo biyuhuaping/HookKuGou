@@ -58,7 +58,7 @@ static NSString *hook_UIDevice_systemVersion(id self, SEL _cmd) {
 static NSString *(*orig_UIDevice_model)(id, SEL) = NULL;
 static NSString *hook_UIDevice_model(id self, SEL _cmd) {
     NSDictionary *config = configDict();
-    NSString *modelStr = config[@"model"];
+    NSString *modelStr = config[@"dModel"];
     if (modelStr.length) {
         NSLog(@"[HOOK] model override: %@", modelStr);
         return modelStr;
@@ -199,7 +199,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     // hw.machine
     if (strcmp(name, "hw.machine") == 0) {
         getOrigSysctlString("hw.machine");
-        NSString *override = config[@"model"];
+        NSString *override = config[@"dModel"];
         if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
             const char *machine1 = [override UTF8String];
             size_t need = strlen(machine1) + 1;
@@ -219,7 +219,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     // hw.model
     else if (strcmp(name, "hw.model") == 0) {
         getOrigSysctlString("hw.model");
-        NSString *override = config[@"hwmodel"];
+        NSString *override = config[@"hwModel"];//D211AP
         if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
             const char *model1 = [override UTF8String];
             size_t need = strlen(model1) + 1;
@@ -259,7 +259,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     // kern.osversion
     else if (strcmp(name, "kern.osversion") == 0) {
         getOrigSysctlString("kern.osversion");
-        NSString *osv = config[@"osversion"];//21G93
+        NSString *osv = config[@"osversion"];//20B101、21G93
         if (osv) {//有配置才覆盖，没有配置 → 走原始逻辑
             const char *fakeVersion = [osv UTF8String];
             size_t len = strlen(fakeVersion) + 1;
@@ -276,6 +276,55 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
 
     // 其他 key 或没配置的情况，直接走原始
     return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
+}
+
+// ---------- WebKit / CFNetwork 内部直接调用来生成 UA 的 ----------
+// CFNetworkCopySystemVersionString
+static CFStringRef (*orig_CFNetworkCopySystemVersionString)(void) = NULL;
+static CFStringRef hook_CFNetworkCopySystemVersionString(void) {
+    CFStringRef origValue = NULL;
+    if (orig_CFNetworkCopySystemVersionString) {
+        origValue = orig_CFNetworkCopySystemVersionString();
+    }
+
+    if (origValue && CFGetTypeID(origValue) == CFStringGetTypeID()) {
+        NSLog(@"[hook] CFNetworkCopySystemVersionString 原值 = %@", (__bridge NSString *)origValue);
+    } else {
+        NSLog(@"[hook] CFNetworkCopySystemVersionString 原值 = <nil or non-string>");
+    }
+
+    NSDictionary *config = configDict();
+    NSString *osv = config[@"osv"];
+    if (osv.length) {
+        NSLog(@"[hook] CFNetworkCopySystemVersionString 覆盖为 %@", osv);
+        return CFRetain((__bridge CFStringRef)osv);
+    }
+
+    return origValue;
+}
+
+// __CFUserAgentString
+static CFStringRef (*orig___CFUserAgentString)(void) = NULL;
+static CFStringRef hook___CFUserAgentString(void) {
+    CFStringRef origValue = NULL;
+    if (orig___CFUserAgentString) {
+        origValue = orig___CFUserAgentString();
+    }
+
+    if (origValue && CFGetTypeID(origValue) == CFStringGetTypeID()) {
+        NSLog(@"[hook] __CFUserAgentString 原值 = %@", (__bridge NSString *)origValue);
+    } else {
+        NSLog(@"[hook] __CFUserAgentString 原值 = <nil or non-string>");
+    }
+
+    NSDictionary *config = configDict();
+    NSString *osv = config[@"osv"];
+    if (osv.length) {
+        NSString *fakeUA = [NSString stringWithFormat:@"Mozilla/5.0 (iPhone; CPU iPhone OS %@ like Mac OS X)", osv];
+        NSLog(@"[hook] __CFUserAgentString 覆盖为 %@", fakeUA);
+        return CFRetain((__bridge CFStringRef)fakeUA);
+    }
+    return origValue;
 }
 
 
@@ -300,11 +349,24 @@ static void init_hooks(void) {
     @autoreleasepool {
         NSLog(@"[HOOK] init_hooks called");
         // fishhook 替换 sysctlbyname
-        struct rebinding rb;
-        rb.name = "sysctlbyname";
-        rb.replacement = (void *)hook_sysctlbyname;
-        rb.replaced = (void *)&orig_sysctlbyname;
-        rebind_symbols(&rb, 1);
+        struct rebinding rbs[3];
+
+        rbs[0].name = "sysctlbyname";
+        rbs[0].replacement = (void *)hook_sysctlbyname;
+        rbs[0].replaced = (void *)&orig_sysctlbyname;
+
+        // CFNetworkCopySystemVersionString
+        rbs[1].name = "CFNetworkCopySystemVersionString";
+        rbs[1].replacement = (void *)hook_CFNetworkCopySystemVersionString;
+        rbs[1].replaced = (void *)&orig_CFNetworkCopySystemVersionString;
+
+        // __CFUserAgentString
+        rbs[2].name = "__CFUserAgentString";
+        rbs[2].replacement = (void *)hook___CFUserAgentString;
+        rbs[2].replaced = (void *)&orig___CFUserAgentString;
+
+        rebind_symbols(rbs, 3);
+
 
         // UIDevice
         Class UIDeviceClass = objc_getClass("UIDevice");
