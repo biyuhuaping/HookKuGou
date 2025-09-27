@@ -16,6 +16,7 @@ static NSDictionary *configDict(void) {
         NSLog(@"[HOOK] Failed to load plist at %@", path);
         dic = @{};
     }
+    NSLog(@"[configDict] path at %@", path);
     return dic[@"config"];
 }
 
@@ -84,13 +85,15 @@ static NSUUID *hook_ASID_advertisingIdentifier(id self, SEL _cmd) {
 static CGRect (*orig_UIScreen_bounds)(id, SEL) = NULL;
 static CGRect hook_UIScreen_bounds(id self, SEL _cmd) {
     CGRect value = orig_UIScreen_bounds(self, _cmd);
+    NSLog(@"[Hook] UIScreen.bounds = %.0f x %.0f", value.size.width, value.size.height);
+
     NSDictionary *config = configDict();
     NSNumber *dx = config[@"dx"];
     NSNumber *dy = config[@"dy"];
     if ([dx isKindOfClass:[NSNumber class]] && [dy isKindOfClass:[NSNumber class]]) {
         CGFloat w = dx.floatValue;
         CGFloat h = dy.floatValue;
-        NSLog(@"[Hook] override bounds: %.0f x %.0f", w, h);
+        NSLog(@"[Hook] UIScreen.bounds修改为: %.0f x %.0f", w, h);
         return CGRectMake(0, 0, w, h);
     }
     return value;
@@ -111,13 +114,14 @@ static CGFloat hook_UIScreen_scale(id self, SEL _cmd) {
 static CGRect (*orig_UIScreen_nativeBounds)(id, SEL) = NULL;
 static CGRect hook_UIScreen_nativeBounds(id self, SEL _cmd) {
     CGRect value = orig_UIScreen_nativeBounds(self, _cmd);
+    NSLog(@"[Hook] UIScreen.nativeBounds = %.0f x %.0f", value.size.width, value.size.height);
     NSDictionary *config = configDict();
     NSNumber *ndx = config[@"ndx"];
     NSNumber *ndy = config[@"ndy"];
     if ([ndx isKindOfClass:[NSNumber class]] && [ndy isKindOfClass:[NSNumber class]]) {
         CGFloat w = ndx.floatValue;
         CGFloat h = ndy.floatValue;
-        NSLog(@"[Hook] override nativeBounds: %.0f x %.0f", w, h);
+        NSLog(@"[Hook] UIScreen.nativeBounds 修改为: %.0f x %.0f", w, h);
         return CGRectMake(0, 0, w, h);
     }
     return value;
@@ -170,28 +174,110 @@ static NSDictionary *hook_NSBundle_infoDictionary(id self, SEL _cmd) {
 }
 
 // ---------- sysctlbyname via fishhook ----------
+
 static int (*orig_sysctlbyname)(const char *, void *, size_t *, const void *, size_t) = NULL;
-static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
+// 读取 sysctlbyname 原始字符串
+static NSString *getOrigSysctlString(const char *name) {
+    size_t size = 0;
+    if (orig_sysctlbyname(name, NULL, &size, NULL, 0) != 0 || size == 0) {
+        return nil;
+    }
+    char *buf = malloc(size);
+    if (!buf) return nil;
+    if (orig_sysctlbyname(name, buf, &size, NULL, 0) != 0) {
+        free(buf);
+        return nil;
+    }
+    NSString *val = [NSString stringWithUTF8String:buf];
+    free(buf);
+    NSLog(@"[hook] sysctlbyname： %s 原值： %@", name, val);
+    return val;
+}
+static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, const void *newp, size_t newlen) {
     NSDictionary *config = configDict();
+
+    // hw.machine
     if (strcmp(name, "hw.machine") == 0) {
-        if (oldp) {
-            const char *machine1 = [(config[@"model"] ?: @"iPhone14,6") UTF8String];
-            // 注意安全：确保 oldlenp 足够
+        getOrigSysctlString("hw.machine");
+        NSString *override = config[@"model"];
+        if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
+            const char *machine1 = [override UTF8String];
             size_t need = strlen(machine1) + 1;
-            if (oldlenp && *oldlenp >= need) {
-                memcpy(oldp, machine1, need);
-                if (oldlenp) *oldlenp = need;
-            } else if (oldlenp) {
-                // 报告长度，但不写
-                *oldlenp = need;
+            if (oldp && oldlenp) {
+                if (*oldlenp >= need) {
+                    memcpy(oldp, machine1, need);
+                    *oldlenp = need;
+                } else {
+                    *oldlenp = need; // buffer 不够，只返回长度
+                }
             }
-            NSLog(@"sysctlbyname override hw.machine: %s", machine1);
+            NSLog(@"[hook] hw.machine 修改为： %s", machine1);
             return 0;
         }
     }
-    // 其他 key 保持原样
+
+    // hw.model
+    else if (strcmp(name, "hw.model") == 0) {
+        getOrigSysctlString("hw.model");
+        NSString *override = config[@"hwmodel"];
+        if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
+            const char *model1 = [override UTF8String];
+            size_t need = strlen(model1) + 1;
+            if (oldp && oldlenp) {
+                if (*oldlenp >= need) {
+                    memcpy(oldp, model1, need);
+                    *oldlenp = need;
+                } else {
+                    *oldlenp = need;
+                }
+            }
+            NSLog(@"[hook] hw.model 修改为： %s", model1);
+            return 0;
+        }
+    }
+
+    // kern.osproductversion
+    else if (strcmp(name, "kern.osproductversion") == 0) {
+        getOrigSysctlString("kern.osproductversion");
+        NSDictionary *config = configDict();
+        NSString *osv = config[@"osv"];  // "17.6.1"
+        if (osv) { //有配置才覆盖，没有配置 → 走原始逻辑
+            const char *fake = [osv UTF8String];
+            size_t len = strlen(fake) + 1;
+
+            if (oldp && oldlenp && *oldlenp >= len) {
+                memcpy(oldp, fake, len);
+                *oldlenp = len;
+            } else if (oldlenp) {
+                *oldlenp = len;
+            }
+            NSLog(@"[hook] kern.osproductversion 修改为： %s", fake);
+            return 0;
+        }
+    }
+    
+    // kern.osversion
+    else if (strcmp(name, "kern.osversion") == 0) {
+        getOrigSysctlString("kern.osversion");
+        NSString *osv = config[@"osversion"];//21G93
+        if (osv) {//有配置才覆盖，没有配置 → 走原始逻辑
+            const char *fakeVersion = [osv UTF8String];
+            size_t len = strlen(fakeVersion) + 1;
+            if (oldp && oldlenp && *oldlenp >= len) {
+                memcpy(oldp, fakeVersion, len);
+                *oldlenp = len;
+            } else if (oldlenp) {
+                *oldlenp = len;
+            }
+            NSLog(@"[hook] kern.osversion 修改为： %s", fakeVersion);
+            return 0;
+        }
+    }
+
+    // 其他 key 或没配置的情况，直接走原始
     return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
 }
+
 
 // ---------- 安装 swizzle helper ----------
 static void swizzle_instance_method(Class cls, SEL sel, IMP newImp, IMP *origImpStorage, const char *types) {

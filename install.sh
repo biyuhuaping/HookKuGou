@@ -24,11 +24,12 @@ echo "开始打包 deb..."
 make clean package
 
 
-THEOS_DEVICE_PORT=2222
-THEOS_DEVICE_IP=127.0.0.1
+# THEOS_DEVICE_PORT=11111
+THEOS_DEVICE_IP=192.168.1.87 #127.0.0.1
 
 # .jbroot-5F8565E2CA03BC28
-jailbreak_file_path="/var/mobile/Containers/Shared/AppGroup/.jbroot-33BE6A86BB28F200/var/tmp/_theos_install.deb"
+# jailbreak_file_path="/var/mobile/Containers/Shared/AppGroup/.jbroot-33BE6A86BB28F200/var/tmp/_theos_install.deb"
+jailbreak_file_path="/var/mobile/install.deb"
 
 
 ROOTLESS=1
