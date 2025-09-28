@@ -5,7 +5,7 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = HookKuGou
 
-$(TWEAK_NAME)_FILES = Tweak_runtime.m fishhook.c #Tweak.x
+$(TWEAK_NAME)_FILES = Tweak_runtime.m fishhook.c #Tweak.x #
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk

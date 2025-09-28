@@ -20,9 +20,9 @@ function safePrint() {
 var targets = [
     "ALAppLovinVideoViewController",
     "ALBaseVideoViewController",
-    "ALSdk",
-    "NSURLSession",
-    "SKStoreProductViewController",
+    "NSProcessInfo",
+    // "NSURLSession",
+    // "SKStoreProductViewController",
     // "WKWebView",
     // "NSURL",
 ];
@@ -82,14 +82,14 @@ function hookClassMethodsByOwnMethods(className) {
                     // this.parsedArgs = parsedArgs;
                     // safePrint("[+] Enter", className, m, "args:", this.parsedArgs.join(", "));
 
-                // 打印调用栈
-                var backtrace = Thread.backtrace(this.context, Backtracer.FUZZY)
-                                    .map(DebugSymbol.fromAddress)
-                                    .join("\n");
-                console.log("[*] Call stack:\n" + backtrace);
+                    // 打印调用栈
+                    // var backtrace = Thread.backtrace(this.context, Backtracer.FUZZY)
+                    //     .map(DebugSymbol.fromAddress)
+                    //     .join("\n");
+                    // console.log("[*] Call stack:\n" + backtrace);
                 },
                 onLeave: function (retval) {
-                    // safePrint("[-] Leave", className, methodName, "Return:", retval);
+                    // safePrint("[-] Leave", className, methodName, "Return:", describeArg(retval));
                     safePrint(className, methodName);//,"args:", this.parsedArgs.join(", "), "Return:", retval);//"args:", this.parsedArgs.join(", "),
                 }
             });

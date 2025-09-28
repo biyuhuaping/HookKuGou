@@ -167,7 +167,7 @@ static NSDictionary *hook_NSBundle_infoDictionary(id self, SEL _cmd) {
     NSDictionary *config = configDict();
     NSString *fakeOS = config[@"osv"];
     if (fakeOS && mutableDict[@"DTPlatformVersion"]) {
-        NSLog(@"[HOOK] override DTPlatformVersion: %@", fakeOS);
+        NSLog(@"[HOOK] override DTPlatformVersion: %@，%@", fakeOS, mutableDict);
         mutableDict[@"DTPlatformVersion"] = fakeOS;
     }
     return [mutableDict copy];
@@ -198,7 +198,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
 
     // hw.machine
     if (strcmp(name, "hw.machine") == 0) {
-        getOrigSysctlString("hw.machine");
+        getOrigSysctlString("hw.machine");//iPhone10,5
         NSString *override = config[@"dModel"];
         if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
             const char *machine1 = [override UTF8String];
@@ -218,8 +218,8 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
 
     // hw.model
     else if (strcmp(name, "hw.model") == 0) {
-        getOrigSysctlString("hw.model");
-        NSString *override = config[@"hwModel"];//D211AP
+        getOrigSysctlString("hw.model");//D211AP
+        NSString *override = config[@"hwModel"];
         if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
             const char *model1 = [override UTF8String];
             size_t need = strlen(model1) + 1;
@@ -328,6 +328,161 @@ static CFStringRef hook___CFUserAgentString(void) {
 }
 
 
+// ---------- FYEDevice hardwareModel hook ----------
+static NSString *(*orig_FYEDevice_hardwareModel)(id, SEL) = NULL;
+static NSString *hook_FYEDevice_hardwareModel(id self, SEL _cmd) {
+    // 调用原实现获取原始返回
+    NSString *orig = orig_FYEDevice_hardwareModel(self, _cmd);
+
+    // 获取配置中的 "dModel" 覆盖值
+    NSDictionary *config = configDict();
+    NSString *override = config[@"dModel"];
+
+    // 如果配置了覆盖值，使用覆盖的值
+    if (override) {
+        NSLog(@"[HOOK] -[FYEDevice hardwareModel] original: %@ => overridden: %@", orig, override);
+        return override;
+    }
+
+    // 如果没有配置覆盖值，返回原始值
+    NSLog(@"[HOOK] -[FYEDevice hardwareModel] original: %@", orig);
+    return orig;
+}
+
+
+// 声明原始的类方法
+static NSString *(*orig_FYEDevice_getSystemBuildVersion)(id, SEL) = NULL;
+static NSString *hook_FYEDevice_getSystemBuildVersion(id self, SEL _cmd) {
+    // 调用原实现获取原始返回值
+    NSString *orig = orig_FYEDevice_getSystemBuildVersion(self, _cmd);
+
+    // 获取配置中的 "systemBuild" 覆盖值
+    NSDictionary *config = configDict();
+    NSString *override = config[@"systemBuild"];
+
+    if (override) {
+        // 如果配置了覆盖值，使用覆盖值
+        NSLog(@"[HOOK] +[FYEDevice getSystemBuildVersion] original: %@ => overridden: %@", orig, override);
+        return override;
+    }
+
+    // 如果没有配置覆盖值，打印原值并返回
+    NSLog(@"[HOOK] +[FYEDevice getSystemBuildVersion] original: %@", orig);
+    return orig;
+}
+
+
+
+// ---------- NSProcessInfo hooks ----------
+static id (*orig_NSProcessInfo_processInfo)(id, SEL) = NULL;
+static pid_t (*orig_NSProcessInfo_processIdentifier)(id, SEL) = NULL;
+static id (*orig_NSProcessInfo_globallyUniqueString)(id, SEL) = NULL;
+static id (*orig_NSProcessInfo_processName)(id, SEL) = NULL;
+static id (*orig_NSProcessInfo_environment)(id, SEL) = NULL;
+static id (*orig_NSProcessInfo_arguments)(id, SEL) = NULL;
+static NSUInteger (*orig_NSProcessInfo_activeProcessorCount)(id, SEL) = NULL;
+static unsigned long long (*orig_NSProcessInfo_physicalMemory)(id, SEL) = NULL;
+static double (*orig_NSProcessInfo_systemUptime)(id, SEL) = NULL;
+static NSOperatingSystemVersion (*orig_NSProcessInfo_operatingSystemVersion)(id, SEL) = NULL;
+
+// --- replacements ---
+static id hook_NSProcessInfo_processInfo(id self, SEL _cmd) {
+    id obj = orig_NSProcessInfo_processInfo ? orig_NSProcessInfo_processInfo(self, _cmd) : nil;
+    NSLog(@"[HOOK] +[NSProcessInfo processInfo] => %p (class: %s)", obj, obj ? object_getClassName(obj) : "NULL");
+    return obj;
+}
+
+static pid_t hook_NSProcessInfo_processIdentifier(id self, SEL _cmd) {
+    pid_t pid = orig_NSProcessInfo_processIdentifier ? orig_NSProcessInfo_processIdentifier(self, _cmd) : 0;
+    NSLog(@"[HOOK] -[NSProcessInfo processIdentifier] => %d", (int)pid);
+    return pid;
+}
+
+static id hook_NSProcessInfo_globallyUniqueString(id self, SEL _cmd) {
+    id s = orig_NSProcessInfo_globallyUniqueString ? orig_NSProcessInfo_globallyUniqueString(self, _cmd) : nil;
+    NSLog(@"[HOOK] -[NSProcessInfo globallyUniqueString] => %@", s);
+    return s;
+}
+
+static id hook_NSProcessInfo_processName(id self, SEL _cmd) {
+    id n = orig_NSProcessInfo_processName ? orig_NSProcessInfo_processName(self, _cmd) : nil;
+    NSLog(@"[HOOK] -[NSProcessInfo processName] => %@", n);
+    return n;
+}
+
+static id hook_NSProcessInfo_environment(id self, SEL _cmd) {
+    id env = orig_NSProcessInfo_environment ? orig_NSProcessInfo_environment(self, _cmd) : nil;
+    if ([env isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *d = env;
+        NSArray *keys = d.allKeys;
+        NSUInteger limit = MIN((NSUInteger)10, keys.count);
+        NSMutableString *out = [NSMutableString stringWithFormat:@"[HOOK] -[NSProcessInfo environment] count=%lu {", (unsigned long)keys.count];
+        for (NSUInteger i = 0; i < limit; i++) {
+            [out appendFormat:@"%@=%@;", keys[i], d[keys[i]]];
+        }
+        if (keys.count > limit) [out appendFormat:@" ...(%lu more)", (unsigned long)(keys.count - limit)];
+        [out appendString:@"}"];
+        NSLog(@"%@", out);
+    } else {
+        NSLog(@"[HOOK] -[NSProcessInfo environment] => %@", env);
+    }
+    return env;
+}
+
+static id hook_NSProcessInfo_arguments(id self, SEL _cmd) {
+    id arr = orig_NSProcessInfo_arguments ? orig_NSProcessInfo_arguments(self, _cmd) : nil;
+    NSLog(@"[HOOK] -[NSProcessInfo arguments] => %@", arr);
+    return arr;
+}
+
+static NSUInteger hook_NSProcessInfo_activeProcessorCount(id self, SEL _cmd) {
+    NSUInteger v = orig_NSProcessInfo_activeProcessorCount ? orig_NSProcessInfo_activeProcessorCount(self, _cmd) : 0;
+    NSLog(@"[HOOK] -[NSProcessInfo activeProcessorCount] => %lu", (unsigned long)v);
+    return v;
+}
+
+static unsigned long long hook_NSProcessInfo_physicalMemory(id self, SEL _cmd) {
+    unsigned long long mem = orig_NSProcessInfo_physicalMemory ? orig_NSProcessInfo_physicalMemory(self, _cmd) : 0;
+    NSLog(@"[HOOK] -[NSProcessInfo physicalMemory] => %llu bytes", mem);
+    return mem;
+}
+
+static double hook_NSProcessInfo_systemUptime(id self, SEL _cmd) {
+    double up = orig_NSProcessInfo_systemUptime ? orig_NSProcessInfo_systemUptime(self, _cmd) : 0;
+    NSLog(@"[HOOK] -[NSProcessInfo systemUptime] => %f s", up);
+    return up;
+}
+
+static NSOperatingSystemVersion hook_NSProcessInfo_operatingSystemVersion(id self, SEL _cmd) {
+    NSOperatingSystemVersion orig = orig_NSProcessInfo_operatingSystemVersion ? orig_NSProcessInfo_operatingSystemVersion(self, _cmd) : (NSOperatingSystemVersion){0,0,0};
+    NSDictionary *cfg = configDict();
+    NSInteger major = orig.majorVersion;
+    NSInteger minor = orig.minorVersion;
+    NSInteger patch = orig.patchVersion;
+
+    if ([cfg isKindOfClass:[NSDictionary class]]) {
+        NSNumber *mj = cfg[@"os_major"];
+        NSNumber *mn = cfg[@"os_minor"];
+        NSNumber *pt = cfg[@"os_patch"];
+        if (mj) major = mj.integerValue;
+        if (mn) minor = mn.integerValue;
+        if (pt) patch = pt.integerValue;
+    }
+
+    NSLog(@"[HOOK] -[NSProcessInfo operatingSystemVersion] => %ld.%ld.%ld", (long)major, (long)minor, (long)patch);
+    NSOperatingSystemVersion v = { major, minor, patch };
+    return v;
+}
+
+
+
+
+
+
+
+
+
+
 // ---------- 安装 swizzle helper ----------
 static void swizzle_instance_method(Class cls, SEL sel, IMP newImp, IMP *origImpStorage, const char *types) {
     if (!cls) return;
@@ -408,6 +563,34 @@ static void init_hooks(void) {
             swizzle_instance_method(NSBundleClass, @selector(infoDictionary), (IMP)hook_NSBundle_infoDictionary, (IMP *)&orig_NSBundle_infoDictionary, "@@:");
         }
 
+        // NSProcessInfo
+        Class NSProcessInfoClass = objc_getClass("NSProcessInfo");
+        if (NSProcessInfoClass) {
+            swizzle_instance_method(NSProcessInfoClass, @selector(processInfo), (IMP)hook_NSProcessInfo_processInfo, (IMP *)&orig_NSProcessInfo_processInfo, "@@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(processIdentifier), (IMP)hook_NSProcessInfo_processIdentifier, (IMP *)&orig_NSProcessInfo_processIdentifier, "i@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(globallyUniqueString), (IMP)hook_NSProcessInfo_globallyUniqueString, (IMP *)&orig_NSProcessInfo_globallyUniqueString, "@@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(processName), (IMP)hook_NSProcessInfo_processName, (IMP *)&orig_NSProcessInfo_processName, "@@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(environment), (IMP)hook_NSProcessInfo_environment, (IMP *)&orig_NSProcessInfo_environment, "@@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(arguments), (IMP)hook_NSProcessInfo_arguments, (IMP *)&orig_NSProcessInfo_arguments, "@@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(activeProcessorCount), (IMP)hook_NSProcessInfo_activeProcessorCount, (IMP *)&orig_NSProcessInfo_activeProcessorCount, "Q@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(physicalMemory), (IMP)hook_NSProcessInfo_physicalMemory, (IMP *)&orig_NSProcessInfo_physicalMemory, "Q@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(systemUptime), (IMP)hook_NSProcessInfo_systemUptime, (IMP *)&orig_NSProcessInfo_systemUptime, "d@:");
+            swizzle_instance_method(NSProcessInfoClass, @selector(operatingSystemVersion), (IMP)hook_NSProcessInfo_operatingSystemVersion, (IMP *)&orig_NSProcessInfo_operatingSystemVersion, "{_NSOperatingSystemVersion=iii}@:");
+        }
+
+
+        // 使用 fishhook 替换 FYEDevice 的 hardwareModel 方法
+        Class FYEDeviceClass = objc_getClass("FYEDevice");
+        if (FYEDeviceClass) {
+            swizzle_instance_method(FYEDeviceClass, @selector(hardwareModel), (IMP)hook_FYEDevice_hardwareModel, (IMP *)&orig_FYEDevice_hardwareModel, "@@:");
+            // Swizzle 类方法
+            Method originalMethod = class_getClassMethod(FYEDeviceClass, @selector(getSystemBuildVersion));
+            if (originalMethod) {
+                orig_FYEDevice_getSystemBuildVersion = (void *)method_getImplementation(originalMethod);
+                method_setImplementation(originalMethod, (IMP)hook_FYEDevice_getSystemBuildVersion);
+                NSLog(@"[HOOK] Successfully hooked +[FYEDevice getSystemBuildVersion]");
+            }
+        }
         NSLog(@"[HOOK] hooks installed");
     }
 }

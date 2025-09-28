@@ -17,6 +17,7 @@ static NSDictionary *configDict() {
         NSLog(@"[HOOK] Failed to load plist at %@", path);
         dic = @{};
     }
+    NSLog(@"[configDict] path at %@", path);
     return dic[@"config"];
 }
 
@@ -282,5 +283,23 @@ static void hook_sysctlbyname_func() {
         mutableDict[@"DTPlatformVersion"] = fakeOS;
     }
     return [mutableDict copy];
+}
+%end
+
+
+%hook FYEDevice
+- (id)hardwareModel {
+    // 调用原实现获取原始返回
+    id orig = %orig;
+    NSDictionary *config = configDict();
+    NSString *override = config[@"dModel"];//iPhone13,4
+    if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
+        orig = override;
+    }
+    NSLog(@"[HOOK] -[FYEDevice hardwareModel] %@ => %@", orig, %orig);
+    // 如果想要篡改返回，取消下面注释并改成目标值
+    // NSString *fake = @"iPhone12,1";
+    // return fake;
+    return orig;
 }
 %end
