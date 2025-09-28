@@ -46,25 +46,24 @@ static NSUUID *hook_UIDevice_identifierForVendor(id self, SEL _cmd) {
 
 static NSString *(*orig_UIDevice_systemVersion)(id, SEL) = NULL;
 static NSString *hook_UIDevice_systemVersion(id self, SEL _cmd) {
+    NSString *origValue = nil;
+    if (orig_UIDevice_systemVersion) {
+        origValue = orig_UIDevice_systemVersion(self, _cmd);
+    }
+
     NSDictionary *config = configDict();
     NSString *sVersion = config[@"osv"];
+
     if (sVersion.length) {
-        NSLog(@"[HOOK] systemVersion override: %@", sVersion);
+        NSLog(@"[HOOK] UIDevice.systemVersion original: %@ => %@", origValue, sVersion);
         return sVersion;
+    } else {
+        NSLog(@"[HOOK] UIDevice.systemVersion original : %@", origValue);
     }
-    return orig_UIDevice_systemVersion(self, _cmd);
+    return origValue;
 }
 
-static NSString *(*orig_UIDevice_model)(id, SEL) = NULL;
-static NSString *hook_UIDevice_model(id self, SEL _cmd) {
-    NSDictionary *config = configDict();
-    NSString *modelStr = config[@"dModel"];
-    if (modelStr.length) {
-        NSLog(@"[HOOK] model override: %@", modelStr);
-        return modelStr;
-    }
-    return orig_UIDevice_model(self, _cmd);
-}
+
 
 // ---------- ASIdentifierManager advertisingIdentifier ----------
 static NSUUID *(*orig_ASID_advertisingIdentifier)(id, SEL) = NULL;
@@ -174,7 +173,6 @@ static NSDictionary *hook_NSBundle_infoDictionary(id self, SEL _cmd) {
 }
 
 // ---------- sysctlbyname via fishhook ----------
-
 static int (*orig_sysctlbyname)(const char *, void *, size_t *, const void *, size_t) = NULL;
 // 读取 sysctlbyname 原始字符串
 static NSString *getOrigSysctlString(const char *name) {
@@ -193,90 +191,107 @@ static NSString *getOrigSysctlString(const char *name) {
     NSLog(@"[hook] sysctlbyname： %s 原值： %@", name, val);
     return val;
 }
+
 static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, const void *newp, size_t newlen) {
     NSDictionary *config = configDict();
 
-    // hw.machine
+    // ---------------- hw.machine ----------------
     if (strcmp(name, "hw.machine") == 0) {
-        getOrigSysctlString("hw.machine");//iPhone10,5
+        // 先记录原始值（仅用于日志/调试）
+        // getOrigSysctlString 调用的是 orig_sysctlbyname，安全
+        NSString *orig = getOrigSysctlString("hw.machine"); // 例如 "iPhone10,5"
+
         NSString *override = config[@"dModel"];
-        if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
+        if (override && override.length) {
             const char *machine1 = [override UTF8String];
             size_t need = strlen(machine1) + 1;
-            if (oldp && oldlenp) {
-                if (*oldlenp >= need) {
+
+            // 如果调用方只是询问长度（oldp == NULL），务必设置 *oldlenp
+            if (oldlenp) {
+                // 当 buffer 可用且足够时，复制；否则仅设置需要的长度
+                if (oldp && *oldlenp >= need) {
                     memcpy(oldp, machine1, need);
                     *oldlenp = need;
                 } else {
-                    *oldlenp = need; // buffer 不够，只返回长度
+                    // 即便 oldp == NULL，也要返回所需长度给调用方
+                    *oldlenp = need;
                 }
             }
-            NSLog(@"[hook] hw.machine 修改为： %s", machine1);
-            return 0;
+            NSLog(@"[hook] hw.machine ：%@ => %s", orig, machine1);
+            return 0; // 表示成功（写入或仅返回长度）
         }
+
+        // 没有覆盖，交给原实现
+        return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
     }
 
-    // hw.model
-    else if (strcmp(name, "hw.model") == 0) {
-        getOrigSysctlString("hw.model");//D211AP
-        NSString *override = config[@"hwModel"];
-        if (override) {//有配置才覆盖，没有配置 → 走原始逻辑
-            const char *model1 = [override UTF8String];
-            size_t need = strlen(model1) + 1;
-            if (oldp && oldlenp) {
-                if (*oldlenp >= need) {
-                    memcpy(oldp, model1, need);
+    // ---------------- hw.model ----------------
+    // else if (strcmp(name, "hw.model") == 0) {
+    //     NSString *orig = getOrigSysctlString("hw.model"); // e.g. "D211AP"
+    //     NSString *override = config[@"hwModel"];
+    //     if (override && override.length) {
+    //         const char *model1 = [override UTF8String];
+    //         size_t need = strlen(model1) + 1;
+    //         if (oldlenp) {
+    //             if (oldp && *oldlenp >= need) {
+    //                 memcpy(oldp, model1, need);
+    //                 *oldlenp = need;
+    //             } else {
+    //                 *oldlenp = need;
+    //             }
+    //         }
+    //         NSLog(@"[hook] hw.model ：%@ => %s", orig, model1);
+    //         return 0;
+    //     }
+    //     return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
+    // }
+
+    // ---------------- kern.osproductversion ----------------
+    else if (strcmp(name, "kern.osproductversion") == 0) {
+        NSString *orig = getOrigSysctlString("kern.osproductversion");
+        NSString *osv = config[@"osv"];
+        if (osv && osv.length) {
+            const char *fake = [osv UTF8String];
+            size_t need = strlen(fake) + 1;
+            if (oldlenp) {
+                if (oldp && *oldlenp >= need) {
+                    memcpy(oldp, fake, need);
                     *oldlenp = need;
                 } else {
                     *oldlenp = need;
                 }
             }
-            NSLog(@"[hook] hw.model 修改为： %s", model1);
+            NSLog(@"[hook] kern.osproductversion ：%@ => %s", orig, fake);
             return 0;
         }
+        return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
     }
 
-    // kern.osproductversion
-    else if (strcmp(name, "kern.osproductversion") == 0) {
-        getOrigSysctlString("kern.osproductversion");
-        NSDictionary *config = configDict();
-        NSString *osv = config[@"osv"];  // "17.6.1"
-        if (osv) { //有配置才覆盖，没有配置 → 走原始逻辑
-            const char *fake = [osv UTF8String];
-            size_t len = strlen(fake) + 1;
-
-            if (oldp && oldlenp && *oldlenp >= len) {
-                memcpy(oldp, fake, len);
-                *oldlenp = len;
-            } else if (oldlenp) {
-                *oldlenp = len;
-            }
-            NSLog(@"[hook] kern.osproductversion 修改为： %s", fake);
-            return 0;
-        }
-    }
-    
-    // kern.osversion
+    // ---------------- kern.osversion ----------------
     else if (strcmp(name, "kern.osversion") == 0) {
-        getOrigSysctlString("kern.osversion");
-        NSString *osv = config[@"osversion"];//20B101、21G93
-        if (osv) {//有配置才覆盖，没有配置 → 走原始逻辑
+        NSString *orig = getOrigSysctlString("kern.osversion");
+        NSString *osv = config[@"osversion"];
+        if (osv && osv.length) {
             const char *fakeVersion = [osv UTF8String];
-            size_t len = strlen(fakeVersion) + 1;
-            if (oldp && oldlenp && *oldlenp >= len) {
-                memcpy(oldp, fakeVersion, len);
-                *oldlenp = len;
-            } else if (oldlenp) {
-                *oldlenp = len;
+            size_t need = strlen(fakeVersion) + 1;
+            if (oldlenp) {
+                if (oldp && *oldlenp >= need) {
+                    memcpy(oldp, fakeVersion, need);
+                    *oldlenp = need;
+                } else {
+                    *oldlenp = need;
+                }
             }
-            NSLog(@"[hook] kern.osversion 修改为： %s", fakeVersion);
+            NSLog(@"[hook] kern.osversion ：%@ => %s", orig, fakeVersion);
             return 0;
         }
+        return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
     }
 
     // 其他 key 或没配置的情况，直接走原始
     return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
 }
+
 
 // ---------- WebKit / CFNetwork 内部直接调用来生成 UA 的 ----------
 // CFNetworkCopySystemVersionString
@@ -325,50 +340,6 @@ static CFStringRef hook___CFUserAgentString(void) {
         return CFRetain((__bridge CFStringRef)fakeUA);
     }
     return origValue;
-}
-
-
-// ---------- FYEDevice hardwareModel hook ----------
-static NSString *(*orig_FYEDevice_hardwareModel)(id, SEL) = NULL;
-static NSString *hook_FYEDevice_hardwareModel(id self, SEL _cmd) {
-    // 调用原实现获取原始返回
-    NSString *orig = orig_FYEDevice_hardwareModel(self, _cmd);
-
-    // 获取配置中的 "dModel" 覆盖值
-    NSDictionary *config = configDict();
-    NSString *override = config[@"dModel"];
-
-    // 如果配置了覆盖值，使用覆盖的值
-    if (override) {
-        NSLog(@"[HOOK] -[FYEDevice hardwareModel] original: %@ => overridden: %@", orig, override);
-        return override;
-    }
-
-    // 如果没有配置覆盖值，返回原始值
-    NSLog(@"[HOOK] -[FYEDevice hardwareModel] original: %@", orig);
-    return orig;
-}
-
-
-// 声明原始的类方法
-static NSString *(*orig_FYEDevice_getSystemBuildVersion)(id, SEL) = NULL;
-static NSString *hook_FYEDevice_getSystemBuildVersion(id self, SEL _cmd) {
-    // 调用原实现获取原始返回值
-    NSString *orig = orig_FYEDevice_getSystemBuildVersion(self, _cmd);
-
-    // 获取配置中的 "systemBuild" 覆盖值
-    NSDictionary *config = configDict();
-    NSString *override = config[@"systemBuild"];
-
-    if (override) {
-        // 如果配置了覆盖值，使用覆盖值
-        NSLog(@"[HOOK] +[FYEDevice getSystemBuildVersion] original: %@ => overridden: %@", orig, override);
-        return override;
-    }
-
-    // 如果没有配置覆盖值，打印原值并返回
-    NSLog(@"[HOOK] +[FYEDevice getSystemBuildVersion] original: %@", orig);
-    return orig;
 }
 
 
@@ -478,11 +449,6 @@ static NSOperatingSystemVersion hook_NSProcessInfo_operatingSystemVersion(id sel
 
 
 
-
-
-
-
-
 // ---------- 安装 swizzle helper ----------
 static void swizzle_instance_method(Class cls, SEL sel, IMP newImp, IMP *origImpStorage, const char *types) {
     if (!cls) return;
@@ -528,7 +494,6 @@ static void init_hooks(void) {
         if (UIDeviceClass) {
             swizzle_instance_method(UIDeviceClass, @selector(identifierForVendor), (IMP)hook_UIDevice_identifierForVendor, (IMP *)&orig_UIDevice_identifierForVendor, "@@:");
             swizzle_instance_method(UIDeviceClass, @selector(systemVersion), (IMP)hook_UIDevice_systemVersion, (IMP *)&orig_UIDevice_systemVersion, "@@:");
-            swizzle_instance_method(UIDeviceClass, @selector(model), (IMP)hook_UIDevice_model, (IMP *)&orig_UIDevice_model, "@@:");
         }
 
         // ASIdentifierManager
@@ -578,19 +543,6 @@ static void init_hooks(void) {
             swizzle_instance_method(NSProcessInfoClass, @selector(operatingSystemVersion), (IMP)hook_NSProcessInfo_operatingSystemVersion, (IMP *)&orig_NSProcessInfo_operatingSystemVersion, "{_NSOperatingSystemVersion=iii}@:");
         }
 
-
-        // 使用 fishhook 替换 FYEDevice 的 hardwareModel 方法
-        Class FYEDeviceClass = objc_getClass("FYEDevice");
-        if (FYEDeviceClass) {
-            swizzle_instance_method(FYEDeviceClass, @selector(hardwareModel), (IMP)hook_FYEDevice_hardwareModel, (IMP *)&orig_FYEDevice_hardwareModel, "@@:");
-            // Swizzle 类方法
-            Method originalMethod = class_getClassMethod(FYEDeviceClass, @selector(getSystemBuildVersion));
-            if (originalMethod) {
-                orig_FYEDevice_getSystemBuildVersion = (void *)method_getImplementation(originalMethod);
-                method_setImplementation(originalMethod, (IMP)hook_FYEDevice_getSystemBuildVersion);
-                NSLog(@"[HOOK] Successfully hooked +[FYEDevice getSystemBuildVersion]");
-            }
-        }
         NSLog(@"[HOOK] hooks installed");
     }
 }

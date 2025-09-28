@@ -40,13 +40,6 @@ static NSDictionary *configDict() {
     NSLog(@"[HOOK]-systemVersion: %@", sVersion);
     return sVersion ?: %orig;
 }
-// 伪造 model, @"iPhone15,2"; 伪造成 @"iPhone10,2"
-- (NSString *)model {
-    NSDictionary *config = configDict();
-    NSString *modelStr = config[@"model"];
-    NSLog(@"[HOOK]-model: %@", modelStr);
-    return modelStr ?: %orig;
-}
 %end
 
 %hook ASIdentifierManager

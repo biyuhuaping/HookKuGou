@@ -1,12 +1,15 @@
 TARGET := iphone:clang:latest:14.0
-INSTALL_TARGET_PROCESSES = kugou
+# INSTALL_TARGET_PROCESSES = kugou #只给kugou用
+INSTALL_TARGET_PROCESSES = * #多个 App 共用
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = HookKuGou
 
-$(TWEAK_NAME)_FILES = Tweak_runtime.m fishhook.c #Tweak.x #
+#Tweak.x #
+$(TWEAK_NAME)_FILES = Tweak_runtime.m fishhook.c
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc
+
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
