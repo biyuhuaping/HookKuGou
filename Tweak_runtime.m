@@ -2,6 +2,7 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
+#import <objc/message.h>
 #import <dlfcn.h>
 
 // fishhook header (你需要把 fishhook 源加入工程)
@@ -126,6 +127,27 @@ static CGRect hook_UIScreen_nativeBounds(id self, SEL _cmd) {
     return value;
 }
 
+// ---------- StatisticInfo ----------
+static id (*orig_StatisticInfo_sysVer)(id, SEL) = NULL;
+static id hook_StatisticInfo_sysVer(id self, SEL _cmd) {
+    // 获取原始返回值
+    id origValue = nil;
+    if (orig_StatisticInfo_sysVer) {
+        origValue = orig_StatisticInfo_sysVer(self, _cmd);
+    }
+    NSDictionary *cfg = configDict();
+    NSString *override = cfg[@"osv"]; //@"16.7.11"
+
+    if (override && override.length) {
+        NSLog(@"[HOOK] +[StatisticInfo sysVer] original: %@, override: %@", origValue, override);
+        return override; // ARC 会以 autoreleased 语义返回
+    } else {
+        NSLog(@"[HOOK] +[StatisticInfo sysVer] original: %@, no override", origValue);
+        return origValue;
+    }
+}
+
+
 // ---------- NSURLRequest allHTTPHeaderFields ----------
 static NSDictionary *(*orig_NSURLRequest_allHTTPHeaderFields)(id, SEL) = NULL;
 static NSDictionary *hook_NSURLRequest_allHTTPHeaderFields(id self, SEL _cmd) {
@@ -136,41 +158,28 @@ static NSDictionary *hook_NSURLRequest_allHTTPHeaderFields(id self, SEL _cmd) {
 }
 
 // ---------- NSURLSession dataTaskWithRequest:completionHandler: ----------
-static NSURLSessionDataTask *(*orig_NSURLSession_dataTaskWithRequest_completionHandler)(id, SEL, NSURLRequest *, void (^)(NSData *, NSURLResponse *, NSError *)) = NULL;
-static NSURLSessionDataTask *hook_NSURLSession_dataTaskWithRequest_completionHandler(id self, SEL _cmd, NSURLRequest *request, void (^completionHandler)(NSData *, NSURLResponse *, NSError *)) {
-    NSString *url = request.URL.absoluteString;
-    NSLog(@"[hook] RequestURL: %@", url);
-    __block NSString *requestBody = nil;
-    if (request.HTTPBody) {
-        requestBody = [[NSString alloc] initWithData:request.HTTPBody encoding:NSUTF8StringEncoding];
-        NSLog(@"[hook] Request Body: %@", requestBody);
-    }
-    void (^customCompletion)(NSData *, NSURLResponse *, NSError *) = ^(NSData *data, NSURLResponse *response, NSError *error) {
-        NSString *responseBody = @"<nil>";
-        if (data) {
-            NSString *tmp = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            if (tmp) responseBody = tmp;
-        }
-        NSLog(@"[hook] 请求：%@\n入参：%@\n出参：%@", url, requestBody, responseBody);
-        if (completionHandler) completionHandler(data, response, error);
-    };
-    return orig_NSURLSession_dataTaskWithRequest_completionHandler(self, _cmd, request, customCompletion);
-}
+// static NSURLSessionDataTask *(*orig_NSURLSession_dataTaskWithRequest_completionHandler)(id, SEL, NSURLRequest *, void (^)(NSData *, NSURLResponse *, NSError *)) = NULL;
+// static NSURLSessionDataTask *hook_NSURLSession_dataTaskWithRequest_completionHandler(id self, SEL _cmd, NSURLRequest *request, void (^completionHandler)(NSData *, NSURLResponse *, NSError *)) {
+//     NSString *url = request.URL.absoluteString;
+//     NSLog(@"[hook] RequestURL: %@", url);
+//     __block NSString *requestBody = nil;
+//     if (request.HTTPBody) {
+//         requestBody = [[NSString alloc] initWithData:request.HTTPBody encoding:NSUTF8StringEncoding];
+//         NSLog(@"[hook] Request Body: %@", requestBody);
+//     }
+//     void (^customCompletion)(NSData *, NSURLResponse *, NSError *) = ^(NSData *data, NSURLResponse *response, NSError *error) {
+//         NSString *responseBody = @"<nil>";
+//         if (data) {
+//             NSString *tmp = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+//             if (tmp) responseBody = tmp;
+//         }
+//         NSLog(@"[hook] 请求：%@\n入参：%@\n出参：%@", url, requestBody, responseBody);
+//         if (completionHandler) completionHandler(data, response, error);
+//     };
+//     return orig_NSURLSession_dataTaskWithRequest_completionHandler(self, _cmd, request, customCompletion);
+// }
 
-// ---------- NSBundle infoDictionary ----------
-static NSDictionary *(*orig_NSBundle_infoDictionary)(id, SEL) = NULL;
-static NSDictionary *hook_NSBundle_infoDictionary(id self, SEL _cmd) {
-    NSDictionary *originalDict = orig_NSBundle_infoDictionary(self, _cmd);
-    if (!originalDict) return originalDict;
-    NSMutableDictionary *mutableDict = [originalDict mutableCopy];
-    NSDictionary *config = configDict();
-    NSString *fakeOS = config[@"osv"];
-    if (fakeOS && mutableDict[@"DTPlatformVersion"]) {
-        NSLog(@"[HOOK] override DTPlatformVersion: %@，%@", fakeOS, mutableDict);
-        mutableDict[@"DTPlatformVersion"] = fakeOS;
-    }
-    return [mutableDict copy];
-}
+
 
 // ---------- sysctlbyname via fishhook ----------
 static int (*orig_sysctlbyname)(const char *, void *, size_t *, const void *, size_t) = NULL;
@@ -447,6 +456,180 @@ static NSOperatingSystemVersion hook_NSProcessInfo_operatingSystemVersion(id sel
 
 
 
+// ---------- NSUserDefaults -setObject:forKey: hook ----------
+static NSString *replaceiPhoneOSVersion(NSString *input, NSString *newVer) {
+    if (![input isKindOfClass:[NSString class]] || !newVer) return input;
+    NSError *err = nil;
+    NSRegularExpression *re = [NSRegularExpression regularExpressionWithPattern:@"iPhone OS[ _][0-9]+(?:[._][0-9]+)*" options:0 error:&err];
+    if (!err) {
+        return [re stringByReplacingMatchesInString:input options:0 range:NSMakeRange(0, input.length) withTemplate:[NSString stringWithFormat:@"iPhone OS %@", newVer]];
+    }
+    return input;
+}
+static void (*orig_NSUserDefaults_setObject_forKey)(id, SEL, id, id) = NULL;
+static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, id key) {
+    @autoreleasepool {
+        NSString *keyStr = [key respondsToSelector:@selector(description)] ? [key description] : nil;
+        if (!keyStr || !object) {
+            orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
+            return;
+        }
+
+        NSDictionary *cfg = configDict();
+        NSString *osv = cfg[@"osv"];
+        if (!osv || ![osv isKindOfClass:[NSString class]]) {
+            orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
+            return;
+        }
+
+        NSString *newVer = [osv stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+
+        // ----- saveAgent 字典 -----
+        if ([keyStr isEqualToString:@"saveAgent"] && [object isKindOfClass:[NSDictionary class]]) {
+            NSMutableDictionary *agentDict = [object mutableCopy];
+            for (NSString *uaKey in @[@"SystemUserAgent", @"UserAgent"]) {
+                agentDict[uaKey] = replaceiPhoneOSVersion(agentDict[uaKey], newVer);
+            }
+            NSLog(@"[HOOK] NSUserDefaults saveAgent replaced: %@", agentDict);
+            orig_NSUserDefaults_setObject_forKey(self, _cmd, agentDict, key);
+            return;
+        }
+
+        // ----- 其他包含 Agent 的 key -----
+        if ([keyStr rangeOfString:@"Agent" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            id newObject = object;
+            if ([object isKindOfClass:[NSString class]]) {
+                newObject = replaceiPhoneOSVersion(object, newVer);
+                if (newObject != object) {
+                    NSLog(@"[HOOK] NSUserDefaults setObject for %@ replaced: %@", keyStr, newObject);
+                }
+            }
+            orig_NSUserDefaults_setObject_forKey(self, _cmd, newObject, key);
+            return;
+        }
+
+        // ----- 其他情况 -----
+        orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
+    }
+}
+
+
+
+
+// ========== Hook TMEWebUserAgent -readLocalUserAgentCaches ==========
+// 保存原 impl
+static id (*orig_TMEWebUserAgent_readLocalUserAgentCaches)(id, SEL) = NULL;
+static id hook_TMEWebUserAgent_readLocalUserAgentCaches(id self, SEL _cmd) {
+    @autoreleasepool {
+        id orig = nil;
+        if (orig_TMEWebUserAgent_readLocalUserAgentCaches) {
+            orig = orig_TMEWebUserAgent_readLocalUserAgentCaches(self, _cmd);
+        } else {
+            // 没有原 impl，则尽量不影响，返回 nil 或者空字典
+            NSLog(@"[HOOK] orig_TMEWebUserAgent_readLocalUserAgentCaches == NULL");
+            return orig;
+        }
+
+        if (!orig) {
+            NSLog(@"[HOOK] readLocalUserAgentCaches returned nil");
+            return orig;
+        }
+
+        // 只处理字典类型
+        if (![orig isKindOfClass:[NSDictionary class]]) {
+            NSLog(@"[HOOK] readLocalUserAgentCaches returned non-dictionary: %@", [orig class]);
+            return orig;
+        }
+
+        NSMutableDictionary *m = [orig mutableCopy];
+
+        // 从配置读取目标版本，例如 "16.1.1"
+        NSDictionary *cfg = configDict();
+        NSString *sVersion = nil;
+        if ([cfg isKindOfClass:[NSDictionary class]]) {
+            sVersion = cfg[@"osv"];
+        }
+        if (!sVersion || ![sVersion isKindOfClass:[NSString class]] || sVersion.length == 0) {
+            // 没配置则不改动，返回原始字典
+            NSLog(@"[HOOK] readLocalUserAgentCaches: no osv in config -> no change");
+            return orig;
+        }
+
+        // 把 "16.1.1" -> "16_1_1" （UA 中使用下划线）
+        NSString *underscored = [sVersion stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+
+        // 定义替换函数：把 "iPhone OS 16_7_11" 这类片段替换成 "iPhone OS <underscored>"
+        NSRegularExpression *re = nil;
+        NSError *reErr = nil;
+        // 捕获形如 "iPhone OS 16_7" 或 "iPhone OS 16_7_11" 的片段
+        re = [NSRegularExpression regularExpressionWithPattern:@"iPhone OS [0-9]+(?:_[0-9]+)*(?:_[0-9]+)?" options:0 error:&reErr];
+        if (reErr) {
+            NSLog(@"[HOOK] regex error: %@", reErr);
+            // 如果正则失败则还是尝试简单字符串替换 "16_7_11" -> underscored
+        }
+
+        NSArray<NSString *> *keysToPatch = @[@"SystemUserAgent", @"UserAgent"];
+        BOOL changed = NO;
+        for (NSString *k in keysToPatch) {
+            id v = m[k];
+            if (![v isKindOfClass:[NSString class]]) continue;
+            NSString *s = (NSString *)v;
+            NSString *newS = s;
+
+            if (re) {
+                // 用 regex 替换 iPhone OS ... 部分
+                newS = [re stringByReplacingMatchesInString:newS options:0 range:NSMakeRange(0, newS.length) withTemplate:[NSString stringWithFormat:@"iPhone OS %@", underscored]];
+            } else {
+                // 回退：直接替换任意已有的数字点或下划线格式（更保守）
+                // 先把点改成下划线，然后寻找第一个 "iPhone OS " 后的版本并替换
+                NSRange r = [newS rangeOfString:@"iPhone OS "];
+                if (r.location != NSNotFound) {
+                    NSUInteger start = r.location + r.length;
+                    // 从 start 找到下一个 " like Mac OS X" 或者 ")" 作为结束
+                    NSRange endRange = [newS rangeOfString:@" like Mac OS X" options:0 range:NSMakeRange(start, newS.length - start)];
+                    NSUInteger end = (endRange.location != NSNotFound) ? endRange.location : newS.length;
+                    NSRange verRange = NSMakeRange(start, end - start);
+                    NSString *ver = [newS substringWithRange:verRange];
+                    // 将点改下划线
+                    NSString *ver2 = [ver stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+                    newS = [newS stringByReplacingCharactersInRange:verRange withString:ver2];
+                    // 之后再替换 ver2 为 underscored（确保一致）
+                    newS = [newS stringByReplacingOccurrencesOfString:ver2 withString:underscored];
+                }
+            }
+
+            if (![newS isEqualToString:s]) {
+                m[k] = newS;
+                changed = YES;
+                NSLog(@"[HOOK] patched %@: \n  old: %@\n  new: %@", k, s, newS);
+            } else {
+                // 即使没有通过 regex 替换，也尝试直接把现有 xxx_xxx_xxx 替换为 underscored（保守替换）
+                // 匹配形如 \d+_\d+(?:_\d+)?
+                NSRegularExpression *numRe = [NSRegularExpression regularExpressionWithPattern:@"[0-9]+_[0-9]+(?:_[0-9]+)?" options:0 error:NULL];
+                if (numRe) {
+                    newS = [numRe stringByReplacingMatchesInString:newS options:0 range:NSMakeRange(0, newS.length) withTemplate:underscored];
+                    if (![newS isEqualToString:s]) {
+                        m[k] = newS;
+                        changed = YES;
+                        NSLog(@"[HOOK] fallback patched %@: \n  old: %@\n  new: %@", k, s, newS);
+                    }
+                }
+            }
+        }
+
+        if (changed) {
+            NSDictionary *ret = [m copy];
+            return ret;
+        } else {
+            // 没改动则返回原来的对象（降低副作用）
+            return orig;
+        }
+    }
+}
+
+
+
+
 
 
 // ---------- 安装 swizzle helper ----------
@@ -481,12 +664,22 @@ static void init_hooks(void) {
         rbs[1].replacement = (void *)hook_CFNetworkCopySystemVersionString;
         rbs[1].replaced = (void *)&orig_CFNetworkCopySystemVersionString;
 
+        dispatch_async(dispatch_get_main_queue(), ^{
+            struct rebinding rbs[1];
+            rbs[0].name = "CFNetworkCopySystemVersionString";
+            rbs[0].replacement = (void *)hook_CFNetworkCopySystemVersionString;
+            rbs[0].replaced = (void *)&orig_CFNetworkCopySystemVersionString;
+            rebind_symbols(rbs, 1);
+        });
+
         // __CFUserAgentString
         rbs[2].name = "__CFUserAgentString";
         rbs[2].replacement = (void *)hook___CFUserAgentString;
         rbs[2].replaced = (void *)&orig___CFUserAgentString;
 
         rebind_symbols(rbs, 3);
+
+        NSLog(@"CFNetworkCopySystemVersionString addr = %p", dlsym(RTLD_DEFAULT, "CFNetworkCopySystemVersionString"));
 
 
         // UIDevice
@@ -517,16 +710,10 @@ static void init_hooks(void) {
         }
 
         // NSURLSession
-        Class NSURLSessionClass = objc_getClass("NSURLSession");
-        if (NSURLSessionClass) {
-            swizzle_instance_method(NSURLSessionClass, @selector(dataTaskWithRequest:completionHandler:), (IMP)hook_NSURLSession_dataTaskWithRequest_completionHandler, (IMP *)&orig_NSURLSession_dataTaskWithRequest_completionHandler, "@@:@?"); // types: id,SEL,NSURLRequest*,block
-        }
-
-        // NSBundle
-        Class NSBundleClass = objc_getClass("NSBundle");
-        if (NSBundleClass) {
-            swizzle_instance_method(NSBundleClass, @selector(infoDictionary), (IMP)hook_NSBundle_infoDictionary, (IMP *)&orig_NSBundle_infoDictionary, "@@:");
-        }
+        // Class NSURLSessionClass = objc_getClass("NSURLSession");
+        // if (NSURLSessionClass) {
+        //     swizzle_instance_method(NSURLSessionClass, @selector(dataTaskWithRequest:completionHandler:), (IMP)hook_NSURLSession_dataTaskWithRequest_completionHandler, (IMP *)&orig_NSURLSession_dataTaskWithRequest_completionHandler, "@@:@?"); // types: id,SEL,NSURLRequest*,block
+        // }
 
         // NSProcessInfo
         Class NSProcessInfoClass = objc_getClass("NSProcessInfo");
@@ -541,6 +728,32 @@ static void init_hooks(void) {
             swizzle_instance_method(NSProcessInfoClass, @selector(physicalMemory), (IMP)hook_NSProcessInfo_physicalMemory, (IMP *)&orig_NSProcessInfo_physicalMemory, "Q@:");
             swizzle_instance_method(NSProcessInfoClass, @selector(systemUptime), (IMP)hook_NSProcessInfo_systemUptime, (IMP *)&orig_NSProcessInfo_systemUptime, "d@:");
             swizzle_instance_method(NSProcessInfoClass, @selector(operatingSystemVersion), (IMP)hook_NSProcessInfo_operatingSystemVersion, (IMP *)&orig_NSProcessInfo_operatingSystemVersion, "{_NSOperatingSystemVersion=iii}@:");
+        }
+
+        // StatisticInfo +sysVer
+        Class StatisticInfoClass = objc_getClass("StatisticInfo");
+        if (StatisticInfoClass) {
+            Method m = class_getClassMethod(StatisticInfoClass, @selector(sysVer));
+            if (m) {
+                orig_StatisticInfo_sysVer = (void *)method_getImplementation(m);
+                method_setImplementation(m, (IMP)hook_StatisticInfo_sysVer);
+                NSLog(@"[HOOK] hooked +[StatisticInfo sysVer]");
+            } else {
+                NSLog(@"[HOOK] +sysVer method not found");
+            }
+        }
+
+        // NSUserDefaults
+        Class NSUserDefaultsClass = objc_getClass("NSUserDefaults");
+        if (NSUserDefaultsClass){
+            swizzle_instance_method(NSUserDefaultsClass, @selector(setObject:forKey:), (IMP)hook_NSUserDefaults_setObject_forKey, (IMP *)&orig_NSUserDefaults_setObject_forKey, "@@:@");
+        }
+
+        // TMEWebUserAgent
+        Class TMEWebUserAgentClass = objc_getClass("TMEWebUserAgent");
+        if (TMEWebUserAgentClass) {
+            swizzle_instance_method(TMEWebUserAgentClass, @selector(readLocalUserAgentCaches), (IMP)hook_TMEWebUserAgent_readLocalUserAgentCaches, (IMP *)&orig_TMEWebUserAgent_readLocalUserAgentCaches, "@@:");
+            NSLog(@"[HOOK] hooked -[TMEWebUserAgent readLocalUserAgentCaches]");
         }
 
         NSLog(@"[HOOK] hooks installed");
