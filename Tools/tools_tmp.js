@@ -872,7 +872,7 @@ try {
 
 
 
-/*
+
 //TMEWebUserAgent
 if (!ObjC.available) {
     console.log("[-] ObjC runtime is not available!");
@@ -962,7 +962,7 @@ try {
 } catch (err) {
     console.log("[-] Exception while installing hook:", err);
 }
-*/
+
 
 // SystemUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_7_11 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
 //       UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_7_11 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 QQJSSDK/1.0.0 WKWebView";
@@ -1112,7 +1112,7 @@ try {
 }
 */
 
-// watch_plist.js
+/*
 if (!Module) {
     console.log("This script must run under Frida.");
 }
@@ -1131,7 +1131,7 @@ function isTargetPath(path) {
         if (s.indexOf(TARGET_BASENAME) !== -1) return true;
         // file:// URL 形式
         if (s.indexOf("file://") === 0 && s.indexOf(TARGET_BASENAME) !== -1) return true;
-    } catch (e) { /* ignore */ }
+    } catch (e) {  }
     return false;
 }
 
@@ -1445,3 +1445,4 @@ if (ObjC.available) {
 }
 
 console.log("[watch_plist] hooks installed.");
+*/

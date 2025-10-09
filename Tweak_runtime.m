@@ -183,121 +183,85 @@ static NSDictionary *hook_NSURLRequest_allHTTPHeaderFields(id self, SEL _cmd) {
 
 // ---------- sysctlbyname via fishhook ----------
 static int (*orig_sysctlbyname)(const char *, void *, size_t *, const void *, size_t) = NULL;
-// 读取 sysctlbyname 原始字符串
+// MARK: - 工具函数：安全读取原始 sysctl 值
 static NSString *getOrigSysctlString(const char *name) {
     size_t size = 0;
-    if (orig_sysctlbyname(name, NULL, &size, NULL, 0) != 0 || size == 0) {
-        return nil;
-    }
+    if (orig_sysctlbyname(name, NULL, &size, NULL, 0) != 0 || size == 0) return nil;
+
     char *buf = malloc(size);
     if (!buf) return nil;
+
     if (orig_sysctlbyname(name, buf, &size, NULL, 0) != 0) {
         free(buf);
         return nil;
     }
-    NSString *val = [NSString stringWithUTF8String:buf];
+
+    NSString *val = [NSString stringWithUTF8String:buf ?: ""];
     free(buf);
-    NSLog(@"[hook] sysctlbyname： %s 原值： %@", name, val);
+    NSLog(@"[hook] sysctlbyname: %s 原值: %@", name, val);
     return val;
 }
+// MARK: - 工具函数：安全写入 hook 值
+static int setSysctlOverride(const char *name, NSString *orig, NSString *override, void *oldp, size_t *oldlenp) {
+    if (!override || !override.length) return -1;
 
+    const char *fake = [override UTF8String];
+    size_t need = strlen(fake) + 1;
+
+    if (oldlenp) {
+        if (oldp && *oldlenp >= need) {
+            memcpy(oldp, fake, need);
+            *oldlenp = need;
+        } else {
+            *oldlenp = need;
+        }
+    }
+    NSLog(@"[hook] %s ：%@ => %s", name, orig, fake);
+    return 0;
+}
+
+// MARK: - 主钩子函数
 static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, const void *newp, size_t newlen) {
     NSDictionary *config = configDict();
+    // NSString *key = [NSString stringWithUTF8String:name];
 
-    // ---------------- hw.machine ----------------
+    // hw.machine
     if (strcmp(name, "hw.machine") == 0) {
-        // 先记录原始值（仅用于日志/调试）
-        // getOrigSysctlString 调用的是 orig_sysctlbyname，安全
-        NSString *orig = getOrigSysctlString("hw.machine"); // 例如 "iPhone10,5"
-
+        NSString *orig = getOrigSysctlString(name);
         NSString *override = config[@"dModel"];
-        if (override && override.length) {
-            const char *machine1 = [override UTF8String];
-            size_t need = strlen(machine1) + 1;
-
-            // 如果调用方只是询问长度（oldp == NULL），务必设置 *oldlenp
-            if (oldlenp) {
-                // 当 buffer 可用且足够时，复制；否则仅设置需要的长度
-                if (oldp && *oldlenp >= need) {
-                    memcpy(oldp, machine1, need);
-                    *oldlenp = need;
-                } else {
-                    // 即便 oldp == NULL，也要返回所需长度给调用方
-                    *oldlenp = need;
-                }
-            }
-            NSLog(@"[hook] hw.machine ：%@ => %s", orig, machine1);
-            return 0; // 表示成功（写入或仅返回长度）
-        }
-
-        // 没有覆盖，交给原实现
+        if (override.length)
+            return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
     }
 
-    // ---------------- hw.model ----------------
-    // else if (strcmp(name, "hw.model") == 0) {
-    //     NSString *orig = getOrigSysctlString("hw.model"); // e.g. "D211AP"
+    // hw.model
+    // if (strcmp(name, "hw.model") == 0) {
+    //     NSString *orig = getOrigSysctlString(name);
     //     NSString *override = config[@"hwModel"];
-    //     if (override && override.length) {
-    //         const char *model1 = [override UTF8String];
-    //         size_t need = strlen(model1) + 1;
-    //         if (oldlenp) {
-    //             if (oldp && *oldlenp >= need) {
-    //                 memcpy(oldp, model1, need);
-    //                 *oldlenp = need;
-    //             } else {
-    //                 *oldlenp = need;
-    //             }
-    //         }
-    //         NSLog(@"[hook] hw.model ：%@ => %s", orig, model1);
-    //         return 0;
-    //     }
+    //     if (override.length)
+    //         return setSysctlOverride(name, orig, override, oldp, oldlenp);
     //     return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
     // }
 
-    // ---------------- kern.osproductversion ----------------
-    else if (strcmp(name, "kern.osproductversion") == 0) {
-        NSString *orig = getOrigSysctlString("kern.osproductversion");
-        NSString *osv = config[@"osv"];
-        if (osv && osv.length) {
-            const char *fake = [osv UTF8String];
-            size_t need = strlen(fake) + 1;
-            if (oldlenp) {
-                if (oldp && *oldlenp >= need) {
-                    memcpy(oldp, fake, need);
-                    *oldlenp = need;
-                } else {
-                    *oldlenp = need;
-                }
-            }
-            NSLog(@"[hook] kern.osproductversion ：%@ => %s", orig, fake);
-            return 0;
-        }
+    // kern.osproductversion
+    if (strcmp(name, "kern.osproductversion") == 0) {
+        NSString *orig = getOrigSysctlString(name);
+        NSString *override = config[@"osv"];
+        if (override.length)
+            return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
     }
 
-    // ---------------- kern.osversion ----------------
-    else if (strcmp(name, "kern.osversion") == 0) {
-        NSString *orig = getOrigSysctlString("kern.osversion");
-        NSString *osv = config[@"osversion"];
-        if (osv && osv.length) {
-            const char *fakeVersion = [osv UTF8String];
-            size_t need = strlen(fakeVersion) + 1;
-            if (oldlenp) {
-                if (oldp && *oldlenp >= need) {
-                    memcpy(oldp, fakeVersion, need);
-                    *oldlenp = need;
-                } else {
-                    *oldlenp = need;
-                }
-            }
-            NSLog(@"[hook] kern.osversion ：%@ => %s", orig, fakeVersion);
-            return 0;
-        }
+    // kern.osversion
+    if (strcmp(name, "kern.osversion") == 0) {
+        NSString *orig = getOrigSysctlString(name);
+        NSString *override = config[@"osversion"];
+        if (override.length)
+            return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
     }
 
-    // 其他 key 或没配置的情况，直接走原始
+    // 其他 key，交给原函数
     return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
 }
 
