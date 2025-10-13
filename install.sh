@@ -64,21 +64,21 @@ echo "打包完成: $deb_name"
 
 
 #上传 deb 到设备
-echo "上传 deb 到设备..."
-scp -P $THEOS_DEVICE_PORT "$deb_path" mobile@$THEOS_DEVICE_IP:$jailbreak_file_path
-echo "上传完成: $jailbreak_file_path"
+# echo "上传 deb 到设备..."
+# scp -P $THEOS_DEVICE_PORT "$deb_path" mobile@$THEOS_DEVICE_IP:$jailbreak_file_path
+# echo "上传完成: $jailbreak_file_path"
 
 
-# 执行安装
-echo "在设备上安装 deb..."
-ssh -tt -p $THEOS_DEVICE_PORT -l mobile $THEOS_DEVICE_IP "sudo dpkg -i $jailbreak_file_path && rm $jailbreak_file_path"
-echo "安装完成"
+# # 执行安装
+# echo "在设备上安装 deb..."
+# ssh -tt -p $THEOS_DEVICE_PORT -l mobile $THEOS_DEVICE_IP "sudo dpkg -i $jailbreak_file_path && rm $jailbreak_file_path"
+# echo "安装完成"
 
 
-# 重启 SpringBoard
-echo "重启 SpringBoard..."
-ssh -tt -p $THEOS_DEVICE_PORT -l mobile $THEOS_DEVICE_IP 'killall -9 SpringBoard'
-echo "SpringBoard 重启完成"
+# # 重启 SpringBoard
+# echo "重启 SpringBoard..."
+# ssh -tt -p $THEOS_DEVICE_PORT -l mobile $THEOS_DEVICE_IP 'killall -9 SpringBoard'
+# echo "SpringBoard 重启完成"
 
 echo "====================="
 echo "install.sh 执行完成"

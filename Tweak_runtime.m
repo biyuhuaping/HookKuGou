@@ -19,6 +19,53 @@ static NSDictionary *configDict(void) {
     return dic[@"config"];
 }
 
+// ---------- 工具：获取顶层控制器（兼容 Scene） ----------
+static UIWindow *currentWindow(void) {
+    UIWindow *keyWindow = nil;
+
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if (scene.activationState == UISceneActivationStateForegroundActive &&
+                [scene isKindOfClass:[UIWindowScene class]]) {
+
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                for (UIWindow *window in windowScene.windows) {
+                    if (window.windowLevel == UIWindowLevelNormal &&
+                        !window.hidden &&
+                        window.bounds.size.width > 0 &&
+                        window.bounds.size.height > 0) {
+                        keyWindow = window;
+                        break;
+                    }
+                }
+                if (keyWindow) break;
+            }
+        }
+    }
+
+    if (!keyWindow) {
+        for (UIWindow *window in [UIApplication sharedApplication].windows) {
+            if (window.windowLevel == UIWindowLevelNormal &&
+                !window.hidden &&
+                window.bounds.size.width > 0 &&
+                window.bounds.size.height > 0) {
+                keyWindow = window;
+                break;
+            }
+        }
+    }
+
+    if (!keyWindow) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        keyWindow = [UIApplication sharedApplication].keyWindow;
+#pragma clang diagnostic pop
+    }
+
+    return keyWindow;
+}
+
+
 // ---------- 辅助函数 ----------
 // static id safe_objc_msgSend_id(id target, SEL sel) {
 //     if (!target) return nil;
@@ -648,14 +695,6 @@ static void init_hooks(void) {
         rbs[1].replacement = (void *)hook_CFNetworkCopySystemVersionString;
         rbs[1].replaced = (void *)&orig_CFNetworkCopySystemVersionString;
 
-        dispatch_async(dispatch_get_main_queue(), ^{
-            struct rebinding rbs[1];
-            rbs[0].name = "CFNetworkCopySystemVersionString";
-            rbs[0].replacement = (void *)hook_CFNetworkCopySystemVersionString;
-            rbs[0].replaced = (void *)&orig_CFNetworkCopySystemVersionString;
-            rebind_symbols(rbs, 1);
-        });
-
         // __CFUserAgentString
         rbs[2].name = "__CFUserAgentString";
         rbs[2].replacement = (void *)hook___CFUserAgentString;
@@ -663,8 +702,17 @@ static void init_hooks(void) {
 
         rebind_symbols(rbs, 3);
 
-        NSLog(@"CFNetworkCopySystemVersionString addr = %p", dlsym(RTLD_DEFAULT, "CFNetworkCopySystemVersionString"));
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            NSDictionary *config = configDict();
+            NSNumber *scalew = config[@"scalew"];
+            NSNumber *scaleh = config[@"scaleh"];
+            CGFloat w = scalew.floatValue;
+            CGFloat h = scaleh.floatValue;
 
+            UIWindow *win = currentWindow();//[UIApplication sharedApplication].keyWindow;
+            win.transform = CGAffineTransformMakeScale(w, h); // 例如将超出部分缩小
+            win.center = [UIScreen mainScreen].bounds.origin;
+        });
 
         // UIDevice
         Class UIDeviceClass = objc_getClass("UIDevice");
