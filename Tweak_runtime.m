@@ -4,8 +4,6 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 #import <dlfcn.h>
-
-// fishhook header (你需要把 fishhook 源加入工程)
 #import "fishhook.h"
 
 // ---------- 配置读取 ----------
@@ -30,7 +28,28 @@ static NSDictionary *configDict(void) {
 //     return fn(target, sel);
 // }
 
-// ---------- UIDevice identifierForVendor / systemVersion / model ----------
+// ---------- UIDevice  ----------
+// name
+static NSString *(*orig_UIDevice_name)(id, SEL) = NULL;
+static NSString *hook_UIDevice_name(id self, SEL _cmd) {
+    NSString *origValue = nil;
+    if (orig_UIDevice_name) {
+        origValue = orig_UIDevice_name(self, _cmd);
+    }
+
+    NSDictionary *config = configDict();
+    NSString *name = config[@"dName"];
+
+    if (name.length) {
+        NSLog(@"[HOOK] UIDevice.name original: %@ => %@", origValue, name);
+        return name;
+    } else {
+        NSLog(@"[HOOK] UIDevice.name original : %@", origValue);
+    }
+    return origValue;
+}
+
+// identifierForVendor
 static NSUUID *(*orig_UIDevice_identifierForVendor)(id, SEL) = NULL;
 static NSUUID *hook_UIDevice_identifierForVendor(id self, SEL _cmd) {
     NSUUID *orig = orig_UIDevice_identifierForVendor(self, _cmd);
@@ -45,6 +64,7 @@ static NSUUID *hook_UIDevice_identifierForVendor(id self, SEL _cmd) {
     return orig;
 }
 
+// systemVersion
 static NSString *(*orig_UIDevice_systemVersion)(id, SEL) = NULL;
 static NSString *hook_UIDevice_systemVersion(id self, SEL _cmd) {
     NSString *origValue = nil;
@@ -228,7 +248,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     // hw.machine
     if (strcmp(name, "hw.machine") == 0) {
         NSString *orig = getOrigSysctlString(name);
-        NSString *override = config[@"dModel"];
+        NSString *override = config[@"dModel"];//iPhone13,4
         if (override.length)
             return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
@@ -246,7 +266,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     // kern.osproductversion
     if (strcmp(name, "kern.osproductversion") == 0) {
         NSString *orig = getOrigSysctlString(name);
-        NSString *override = config[@"osv"];
+        NSString *override = config[@"osv"];//17.6.1
         if (override.length)
             return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
@@ -255,7 +275,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     // kern.osversion
     if (strcmp(name, "kern.osversion") == 0) {
         NSString *orig = getOrigSysctlString(name);
-        NSString *override = config[@"osversion"];
+        NSString *override = config[@"osb"];//20B101
         if (override.length)
             return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
@@ -649,8 +669,9 @@ static void init_hooks(void) {
         // UIDevice
         Class UIDeviceClass = objc_getClass("UIDevice");
         if (UIDeviceClass) {
+            swizzle_instance_method(UIDeviceClass, @selector(name), (IMP)hook_UIDevice_name, (IMP *)&orig_UIDevice_name, "@@:");
             swizzle_instance_method(UIDeviceClass, @selector(identifierForVendor), (IMP)hook_UIDevice_identifierForVendor, (IMP *)&orig_UIDevice_identifierForVendor, "@@:");
-            swizzle_instance_method(UIDeviceClass, @selector(systemVersion), (IMP)hook_UIDevice_systemVersion, (IMP *)&orig_UIDevice_systemVersion, "@@:");
+            swizzle_instance_method(UIDeviceClass, @selector(systemVersion), (IMP)hook_UIDevice_systemVersion, (IMP *)&orig_UIDevice_systemVersion, "@@:");//
         }
 
         // ASIdentifierManager

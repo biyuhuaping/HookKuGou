@@ -1,4 +1,4 @@
-// crash_watch.js
+// 观察崩溃
 if (typeof Module === 'undefined') {
     console.error('This script must run inside Frida.');
 }
