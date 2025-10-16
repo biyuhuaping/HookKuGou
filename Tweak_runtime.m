@@ -7,63 +7,82 @@
 #import "fishhook.h"
 
 // ---------- 配置读取 ----------
+// static NSDictionary *configDict(void) {
+//     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/.deviceFakeConfig.plist"];
+//     NSURL *url = [NSURL fileURLWithPath:path];
+//     NSDictionary *dic = [NSDictionary dictionaryWithContentsOfURL:url];
+//     if (!dic) {
+//         NSLog(@"[HOOK] Failed to load plist at %@", path);
+//         dic = @{};
+//     }
+//     NSLog(@"[configDict] path at %@", path);
+//     return dic[@"config"];
+// }
+
+static NSDictionary *cachedConfig = nil;
 static NSDictionary *configDict(void) {
+    if (cachedConfig) return cachedConfig;
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/.deviceFakeConfig.plist"];
-    NSURL *url = [NSURL fileURLWithPath:path];
-    NSDictionary *dic = [NSDictionary dictionaryWithContentsOfURL:url];
-    if (!dic) {
-        NSLog(@"[HOOK] Failed to load plist at %@", path);
-        dic = @{};
+    cachedConfig = [NSDictionary dictionaryWithContentsOfFile:path][@"config"];
+    if (!cachedConfig) {
+        NSLog(@"[HOOK] Failed to load config at %@", path);
+        cachedConfig = @{};
+    } else {
+        NSLog(@"[HOOK] Loaded config once at %@", path);
     }
-    NSLog(@"[configDict] path at %@", path);
-    return dic[@"config"];
+    return cachedConfig;
 }
+// 强制重新加载配置
+// static void reloadConfig(void) {
+//     cachedConfig = nil;
+//     (void)configDict();
+// }
 
 // ---------- 工具：获取顶层控制器（兼容 Scene） ----------
-static UIWindow *currentWindow(void) {
-    UIWindow *keyWindow = nil;
+// static UIWindow *currentWindow(void) {
+//     UIWindow *keyWindow = nil;
 
-    if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
-            if (scene.activationState == UISceneActivationStateForegroundActive &&
-                [scene isKindOfClass:[UIWindowScene class]]) {
+//     if (@available(iOS 13.0, *)) {
+//         for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+//             if (scene.activationState == UISceneActivationStateForegroundActive &&
+//                 [scene isKindOfClass:[UIWindowScene class]]) {
 
-                UIWindowScene *windowScene = (UIWindowScene *)scene;
-                for (UIWindow *window in windowScene.windows) {
-                    if (window.windowLevel == UIWindowLevelNormal &&
-                        !window.hidden &&
-                        window.bounds.size.width > 0 &&
-                        window.bounds.size.height > 0) {
-                        keyWindow = window;
-                        break;
-                    }
-                }
-                if (keyWindow) break;
-            }
-        }
-    }
+//                 UIWindowScene *windowScene = (UIWindowScene *)scene;
+//                 for (UIWindow *window in windowScene.windows) {
+//                     if (window.windowLevel == UIWindowLevelNormal &&
+//                         !window.hidden &&
+//                         window.bounds.size.width > 0 &&
+//                         window.bounds.size.height > 0) {
+//                         keyWindow = window;
+//                         break;
+//                     }
+//                 }
+//                 if (keyWindow) break;
+//             }
+//         }
+//     }
 
-    if (!keyWindow) {
-        for (UIWindow *window in [UIApplication sharedApplication].windows) {
-            if (window.windowLevel == UIWindowLevelNormal &&
-                !window.hidden &&
-                window.bounds.size.width > 0 &&
-                window.bounds.size.height > 0) {
-                keyWindow = window;
-                break;
-            }
-        }
-    }
+//     if (!keyWindow) {
+//         for (UIWindow *window in [UIApplication sharedApplication].windows) {
+//             if (window.windowLevel == UIWindowLevelNormal &&
+//                 !window.hidden &&
+//                 window.bounds.size.width > 0 &&
+//                 window.bounds.size.height > 0) {
+//                 keyWindow = window;
+//                 break;
+//             }
+//         }
+//     }
 
-    if (!keyWindow) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        keyWindow = [UIApplication sharedApplication].keyWindow;
-#pragma clang diagnostic pop
-    }
+//     if (!keyWindow) {
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+//         keyWindow = [UIApplication sharedApplication].keyWindow;
+// #pragma clang diagnostic pop
+//     }
 
-    return keyWindow;
-}
+//     return keyWindow;
+// }
 
 
 // ---------- 辅助函数 ----------
@@ -702,17 +721,17 @@ static void init_hooks(void) {
 
         rebind_symbols(rbs, 3);
 
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            NSDictionary *config = configDict();
-            NSNumber *scalew = config[@"scalew"];
-            NSNumber *scaleh = config[@"scaleh"];
-            CGFloat w = scalew.floatValue;
-            CGFloat h = scaleh.floatValue;
+        // dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        //     NSDictionary *config = configDict();
+        //     NSNumber *scalew = config[@"scalew"];
+        //     NSNumber *scaleh = config[@"scaleh"];
+        //     CGFloat w = scalew.floatValue;
+        //     CGFloat h = scaleh.floatValue;
 
-            UIWindow *win = currentWindow();//[UIApplication sharedApplication].keyWindow;
-            win.transform = CGAffineTransformMakeScale(w, h); // 例如将超出部分缩小
-            win.center = [UIScreen mainScreen].bounds.origin;
-        });
+        //     UIWindow *win = currentWindow();//[UIApplication sharedApplication].keyWindow;
+        //     win.transform = CGAffineTransformMakeScale(w, h); // 例如将超出部分缩小
+        //     win.center = [UIScreen mainScreen].bounds.origin;
+        // });
 
         // UIDevice
         Class UIDeviceClass = objc_getClass("UIDevice");
