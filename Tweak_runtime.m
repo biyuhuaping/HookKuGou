@@ -176,11 +176,9 @@ static CGRect hook_UIScreen_bounds(id self, SEL _cmd) {
     NSDictionary *config = configDict();
     NSNumber *dx = config[@"dx"];
     NSNumber *dy = config[@"dy"];
-    if ([dx isKindOfClass:[NSNumber class]] && [dy isKindOfClass:[NSNumber class]]) {
-        CGFloat w = dx.floatValue;
-        CGFloat h = dy.floatValue;
-        NSLog(@"[Hook] UIScreen.bounds修改为: %.0f x %.0f", w, h);
-        return CGRectMake(0, 0, w, h);
+    if (dx && dy) {
+        return CGRectMake(0, 0, dx.floatValue, dy.floatValue);
+        // NSLog(@"[Hook] UIScreen.bounds修改为: %.0f x %.0f", dx.floatValue, dy.floatValue);
     }
     return value;
 }
@@ -189,10 +187,10 @@ static CGFloat (*orig_UIScreen_scale)(id, SEL) = NULL;
 static CGFloat hook_UIScreen_scale(id self, SEL _cmd) {
     CGFloat value = orig_UIScreen_scale(self, _cmd);
     NSDictionary *config = configDict();
-    NSNumber *configScale = config[@"scale"];
-    if ([configScale isKindOfClass:[NSNumber class]]) {
-        NSLog(@"[Hook] override scale: %f", configScale.floatValue);
-        return configScale.floatValue;
+    NSNumber *scale = config[@"scale"];
+    if (scale) {
+        // NSLog(@"[Hook] override scale: %f", scale.floatValue);
+        return scale.floatValue;
     }
     return value;
 }
@@ -200,14 +198,14 @@ static CGFloat hook_UIScreen_scale(id self, SEL _cmd) {
 static CGRect (*orig_UIScreen_nativeBounds)(id, SEL) = NULL;
 static CGRect hook_UIScreen_nativeBounds(id self, SEL _cmd) {
     CGRect value = orig_UIScreen_nativeBounds(self, _cmd);
-    NSLog(@"[Hook] UIScreen.nativeBounds = %.0f x %.0f", value.size.width, value.size.height);
+    // NSLog(@"[Hook] UIScreen.nativeBounds = %.0f x %.0f", value.size.width, value.size.height);
     NSDictionary *config = configDict();
     NSNumber *ndx = config[@"ndx"];
     NSNumber *ndy = config[@"ndy"];
-    if ([ndx isKindOfClass:[NSNumber class]] && [ndy isKindOfClass:[NSNumber class]]) {
+    if (ndx && ndy) {
         CGFloat w = ndx.floatValue;
         CGFloat h = ndy.floatValue;
-        NSLog(@"[Hook] UIScreen.nativeBounds 修改为: %.0f x %.0f", w, h);
+        // NSLog(@"[Hook] UIScreen.nativeBounds 修改为: %.0f x %.0f", w, h);
         return CGRectMake(0, 0, w, h);
     }
     return value;
