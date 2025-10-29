@@ -556,6 +556,16 @@ static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, i
             return;
         }
 
+        // kTencentStatic_Qimei
+        // {"o16":"4cc69d5b31c7eb2bbc94d1ed00001e71631b","o36":"4cc69d5b31c7eb2bbc94d1ed00001e71631b"}
+        if ([keyStr rangeOfString:@"imei" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            NSLog(@"[HOOK] NSUserDefaults %@",keyStr);
+            NSString *newStr = @"{\"o16\":\"4cc69d5b31c7eb2bbc94d1e11111111\",\"o36\":\"4cc69d5b31c7eb2bbc94d1ed00001e222222\"}";
+            NSLog(@"[HOOK] NSUserDefaults kTencentStatic_Qimei %@ -> %@",object, newStr);
+            orig_NSUserDefaults_setObject_forKey(self, _cmd, newStr, key);
+            return;
+        }
+
         // ----- 其他情况 -----
         orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
     }
@@ -798,6 +808,12 @@ static void init_hooks(void) {
         if (NSUserDefaultsClass){
             swizzle_instance_method(NSUserDefaultsClass, @selector(setObject:forKey:), (IMP)hook_NSUserDefaults_setObject_forKey, (IMP *)&orig_NSUserDefaults_setObject_forKey, "@@:@");
         }
+        //主动调用一次hook_NSUserDefaults_setObject_forKey// kTencentStatic_Qimei
+        // {"o16":"4cc69d5b31c7eb2bbc94d1ed00001e71631b","o36":"4cc69d5b31c7eb2bbc94d1ed00001e71631b"}
+        //hook_NSUserDefaults_setObject_forKey(NSUserDefaultsClass, @selector(setObject:forKey:), @"{\"o16\":\"4cc69d5b31c7eb2bbc94d1ed00001e71631b\",\"o36\":\"4cc69d5b31c7eb2bbc94d1ed00001e71631b\"}", @"kTencentStatic_Qimei");
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [defaults setObject:@"{\"o16\":\"4cc69d5b31c7eb2bbc93333333333\",\"o36\":\"4cc69d5b31c7eb2bbc94d1ed444444\"}" forKey:@"kTencentStatic_Qimei"];
+        [defaults synchronize];
 
         // TMEWebUserAgent
         Class TMEWebUserAgentClass = objc_getClass("TMEWebUserAgent");
