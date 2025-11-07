@@ -514,6 +514,85 @@ static NSString *replaceiPhoneOSVersion(NSString *input, NSString *newVer) {
     }
     return input;
 }
+// ---------- NSUserDefaults -objectForKey: hook ----------
+static id (*orig_NSUserDefaults_objectForKey)(id, SEL, id) = NULL;
+static id hook_NSUserDefaults_objectForKey(id self, SEL _cmd, id key) {
+    @autoreleasepool {
+        NSString *keyStr = [key respondsToSelector:@selector(description)] ? [key description] : nil;
+        if (!keyStr) {
+            return orig_NSUserDefaults_objectForKey(self, _cmd, key);
+        }
+        
+        // 先获取原始值
+        id origValue = orig_NSUserDefaults_objectForKey(self, _cmd, key);
+        
+        // 处理 Qimei（如果配置中有值，返回配置的值）
+        if ([keyStr rangeOfString:@"Qimei" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            NSDictionary *cfg = configDict();
+            NSString *newStr = cfg[@"Qimei"];
+            if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
+                NSLog(@"[HOOK] NSUserDefaults objectForKey: %@ => %@ (override)", keyStr, newStr);
+                return newStr;
+            }
+            // 配置不存在或为空，返回原始值
+            return origValue;
+        }
+        
+        // 处理 saveAgent 字典（替换其中的版本号）
+        if ([keyStr isEqualToString:@"saveAgent"] && [origValue isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *cfg = configDict();
+            NSString *osv = cfg[@"osv"];
+            if (!osv || ![osv isKindOfClass:[NSString class]]) {
+                return origValue;
+            }
+            
+            NSString *newVer = [osv stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+            NSMutableDictionary *agentDict = [(NSDictionary *)origValue mutableCopy];
+            BOOL changed = NO;
+            
+            for (NSString *uaKey in @[@"SystemUserAgent", @"UserAgent"]) {
+                id uaValue = agentDict[uaKey];
+                if ([uaValue isKindOfClass:[NSString class]]) {
+                    NSString *newUA = replaceiPhoneOSVersion(uaValue, newVer);
+                    if (newUA != uaValue) {
+                        agentDict[uaKey] = newUA;
+                        changed = YES;
+                    }
+                }
+            }
+            
+            if (changed) {
+                NSLog(@"[HOOK] NSUserDefaults objectForKey: saveAgent => replaced");
+                return [agentDict copy];
+            }
+            return origValue;
+        }
+        
+        // 处理其他包含 Agent 的 key（字符串）
+        if ([keyStr rangeOfString:@"Agent" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            if ([origValue isKindOfClass:[NSString class]]) {
+                NSDictionary *cfg = configDict();
+                NSString *osv = cfg[@"osv"];
+                if (!osv || ![osv isKindOfClass:[NSString class]]) {
+                    return origValue;
+                }
+                
+                NSString *newVer = [osv stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+                NSString *newValue = replaceiPhoneOSVersion(origValue, newVer);
+                if (newValue != origValue) {
+                    NSLog(@"[HOOK] NSUserDefaults objectForKey: %@ => replaced", keyStr);
+                    return newValue;
+                }
+            }
+            return origValue;
+        }
+        
+        // 其他情况，返回原始值
+        return origValue;
+    }
+}
+
+// ---------- NSUserDefaults -setObject:forKey: hook ----------
 static void (*orig_NSUserDefaults_setObject_forKey)(id, SEL, id, id) = NULL;
 static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, id key) {
     @autoreleasepool {
@@ -795,6 +874,7 @@ static void init_hooks(void) {
         // NSUserDefaults
         Class NSUserDefaultsClass = objc_getClass("NSUserDefaults");
         if (NSUserDefaultsClass){
+            swizzle_instance_method(NSUserDefaultsClass, @selector(objectForKey:), (IMP)hook_NSUserDefaults_objectForKey, (IMP *)&orig_NSUserDefaults_objectForKey, "@@:@");
             swizzle_instance_method(NSUserDefaultsClass, @selector(setObject:forKey:), (IMP)hook_NSUserDefaults_setObject_forKey, (IMP *)&orig_NSUserDefaults_setObject_forKey, "@@:@");
         }
         //主动调用一次hook_NSUserDefaults_setObject_forKey// kTencentStatic_Qimei
