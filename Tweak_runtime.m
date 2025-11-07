@@ -522,47 +522,36 @@ static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, i
             orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
             return;
         }
-
-        NSDictionary *cfg = configDict();
-        NSString *osv = cfg[@"osv"];
-        if (!osv || ![osv isKindOfClass:[NSString class]]) {
-            orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
-            return;
-        }
-
-        NSString *newVer = [osv stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-
+        
         // ----- saveAgent 字典 -----
         if ([keyStr isEqualToString:@"saveAgent"] && [object isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *cfg = configDict();
+            NSString *osv = cfg[@"osv"];
+            if (!osv || ![osv isKindOfClass:[NSString class]]) {
+                orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
+                return;
+            }
+            NSString *newVer = [osv stringByReplacingOccurrencesOfString:@"." withString:@"_"];
             NSMutableDictionary *agentDict = [object mutableCopy];
             for (NSString *uaKey in @[@"SystemUserAgent", @"UserAgent"]) {
                 agentDict[uaKey] = replaceiPhoneOSVersion(agentDict[uaKey], newVer);
             }
-            NSLog(@"[HOOK] NSUserDefaults saveAgent replaced: %@", agentDict);
             orig_NSUserDefaults_setObject_forKey(self, _cmd, agentDict, key);
             return;
         }
 
-        // ----- 其他包含 Agent 的 key -----
-        if ([keyStr rangeOfString:@"Agent" options:NSCaseInsensitiveSearch].location != NSNotFound) {
-            id newObject = object;
-            if ([object isKindOfClass:[NSString class]]) {
-                newObject = replaceiPhoneOSVersion(object, newVer);
-                if (newObject != object) {
-                    NSLog(@"[HOOK] NSUserDefaults setObject for %@ replaced: %@", keyStr, newObject);
-                }
-            }
-            orig_NSUserDefaults_setObject_forKey(self, _cmd, newObject, key);
-            return;
-        }
-
         // kTencentStatic_Qimei
-        // {"o16":"4cc69d5b31c7eb2bbc94d1ed00001e71631b","o36":"4cc69d5b31c7eb2bbc94d1ed00001e71631b"}
-        if ([keyStr rangeOfString:@"imei" options:NSCaseInsensitiveSearch].location != NSNotFound) {
-            NSLog(@"[HOOK] NSUserDefaults %@",keyStr);
-            NSString *newStr = @"{\"o16\":\"4cc69d5b31c7eb2bbc94d1e11111111\",\"o36\":\"4cc69d5b31c7eb2bbc94d1ed00001e222222\"}";
-            NSLog(@"[HOOK] NSUserDefaults kTencentStatic_Qimei %@ -> %@",object, newStr);
-            orig_NSUserDefaults_setObject_forKey(self, _cmd, newStr, key);
+        if ([keyStr rangeOfString:@"Qimei" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            NSDictionary *cfg = configDict();
+            NSString *newStr = cfg[@"Qimei"];
+            // 只有当配置存在且不为空时才覆盖，否则保持原值
+            if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
+                NSLog(@"[HOOK] NSUserDefaults %@ %@ -> %@", keyStr, object, newStr);
+                orig_NSUserDefaults_setObject_forKey(self, _cmd, newStr, key);
+            } else {
+                // 配置不存在或为空，使用原值
+                orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
+            }
             return;
         }
 
@@ -809,10 +798,8 @@ static void init_hooks(void) {
             swizzle_instance_method(NSUserDefaultsClass, @selector(setObject:forKey:), (IMP)hook_NSUserDefaults_setObject_forKey, (IMP *)&orig_NSUserDefaults_setObject_forKey, "@@:@");
         }
         //主动调用一次hook_NSUserDefaults_setObject_forKey// kTencentStatic_Qimei
-        // {"o16":"4cc69d5b31c7eb2bbc94d1ed00001e71631b","o36":"4cc69d5b31c7eb2bbc94d1ed00001e71631b"}
-        //hook_NSUserDefaults_setObject_forKey(NSUserDefaultsClass, @selector(setObject:forKey:), @"{\"o16\":\"4cc69d5b31c7eb2bbc94d1ed00001e71631b\",\"o36\":\"4cc69d5b31c7eb2bbc94d1ed00001e71631b\"}", @"kTencentStatic_Qimei");
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        [defaults setObject:@"{\"o16\":\"4cc69d5b31c7eb2bbc93333333333\",\"o36\":\"4cc69d5b31c7eb2bbc94d1ed444444\"}" forKey:@"kTencentStatic_Qimei"];
+        [defaults setObject:@"111" forKey:@"kTencentStatic_Qimei"];
         [defaults synchronize];
 
         // TMEWebUserAgent
