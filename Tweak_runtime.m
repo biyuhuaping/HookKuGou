@@ -4,6 +4,9 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 #import <dlfcn.h>
+#import <mach-o/dyld.h>
+#import <sys/sysctl.h>
+#import <strings.h>
 #import "fishhook.h"
 
 // ---------- 配置读取 ----------
@@ -527,9 +530,9 @@ static id hook_NSUserDefaults_objectForKey(id self, SEL _cmd, id key) {
         id origValue = orig_NSUserDefaults_objectForKey(self, _cmd, key);
         
         // 处理 Qimei（如果配置中有值，返回配置的值）
-        if ([keyStr rangeOfString:@"Qimei" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+        if ([keyStr isEqualToString:@"kTencentStatic_Qimei"]) {
             NSDictionary *cfg = configDict();
-            NSString *newStr = cfg[@"Qimei"];
+            NSString *newStr = cfg[@"kTencentStatic_Qimei"];
             if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
                 NSLog(@"[HOOK] NSUserDefaults objectForKey: %@ => %@ (override)", keyStr, newStr);
                 return newStr;
@@ -620,9 +623,9 @@ static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, i
         }
 
         // kTencentStatic_Qimei
-        if ([keyStr rangeOfString:@"Qimei" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+        if ([keyStr isEqualToString:@"kTencentStatic_Qimei"]) {
             NSDictionary *cfg = configDict();
-            NSString *newStr = cfg[@"Qimei"];
+            NSString *newStr = cfg[@"kTencentStatic_Qimei"];
             // 只有当配置存在且不为空时才覆盖，否则保持原值
             if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
                 NSLog(@"[HOOK] NSUserDefaults %@ %@ -> %@", keyStr, object, newStr);
@@ -758,6 +761,434 @@ static id hook_TMEWebUserAgent_readLocalUserAgentCaches(id self, SEL _cmd) {
 
 
 
+// ---------- Hook 多个类的 qimei36 相关方法（统一返回 123456789） ----------
+// +[QMBeaconApi getQIMEI]
+static NSString *(*orig_QMBeaconApi_getQIMEI)(id, SEL) = NULL;
+static NSString *hook_QMBeaconApi_getQIMEI(id self, SEL _cmd) {
+    NSDictionary *cfg = configDict();
+    NSString *qimei = cfg[@"qimei"];
+    if (qimei.length > 0) {
+        NSLog(@"[HOOK] [QMBeaconApi] Called: +getQIMEI 新值: %@", qimei);
+        return qimei;
+    }
+    // 如果配置为空，使用原值
+    NSString *originalValue = orig_QMBeaconApi_getQIMEI ? orig_QMBeaconApi_getQIMEI(self, _cmd) : nil;
+    NSLog(@"[HOOK] [QMBeaconApi] Called: +getQIMEI 原值: %@", originalValue ?: @"");
+    return originalValue;
+}
+
+// +[QMBeaconApi getQimeiNew]
+static NSString *(*orig_QMBeaconApi_getQimeiNew)(id, SEL) = NULL;
+static NSString *hook_QMBeaconApi_getQimeiNew(id self, SEL _cmd) {
+    NSDictionary *cfg = configDict();
+    NSString *qimei = cfg[@"qimei"];
+    if (qimei.length > 0) {
+        NSLog(@"[HOOK] [QMBeaconApi] Called: +getQimeiNew 新值: %@", qimei);
+        return qimei;
+    }
+    // 如果配置为空，使用原值
+    NSString *originalValue = orig_QMBeaconApi_getQimeiNew ? orig_QMBeaconApi_getQimeiNew(self, _cmd) : nil;
+    NSLog(@"[HOOK] [QMBeaconApi] Called: +getQimeiNew 原值: %@", originalValue ?: @"");
+    return originalValue;
+}
+
+// +[QMBeaconHelper getQimei]
+static NSString *(*orig_QMBeaconHelper_getQimei)(id, SEL) = NULL;
+static NSString *hook_QMBeaconHelper_getQimei(id self, SEL _cmd) {
+    NSDictionary *cfg = configDict();
+    NSString *qimei = cfg[@"qimei"];
+    if (qimei.length > 0) {
+        NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimei 新值: %@", qimei);
+        return qimei;
+    }
+    // 如果配置为空，使用原值
+    NSString *originalValue = orig_QMBeaconHelper_getQimei ? orig_QMBeaconHelper_getQimei(self, _cmd) : nil;
+    NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimei 原值: %@", originalValue ?: @"");
+    return originalValue;
+}
+
+// +[QMBeaconHelper getQimeiNew]
+static NSString *(*orig_QMBeaconHelper_getQimeiNew)(id, SEL) = NULL;
+static NSString *hook_QMBeaconHelper_getQimeiNew(id self, SEL _cmd) {
+    NSDictionary *cfg = configDict();
+    NSString *qimei = cfg[@"qimei"];
+    if (qimei.length > 0) {
+        NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimeiNew 新值: %@", qimei);
+        return qimei;
+    }
+    // 如果配置为空，使用原值
+    NSString *originalValue = orig_QMBeaconHelper_getQimeiNew ? orig_QMBeaconHelper_getQimeiNew(self, _cmd) : nil;
+    NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimeiNew 原值: %@", originalValue ?: @"");
+    return originalValue;
+}
+
+// 统一安装所有 qimei36 相关方法的 hook
+static void hook_all_qimei36_methods(void);
+static void hook_all_qimei36_methods(void) {
+
+    //调用链
+    //QMBeaconApi.getQIMEI → QMBeaconHelper.getQimei
+    //QMBeaconApi.getQimeiNew → QMBeaconHelper.getQimeiNew 或返回默认值 
+    // [Base64Helper decode_str_to_str:@"YjkyNTA5MmNlNzFlNTE3NzQwNzE1ODdjMTAwMDEzZjE0YTAx"];
+
+    // QMBeaconApi 类方法
+    Class QMBeaconApiClass = objc_getClass("QMBeaconApi");
+    if (QMBeaconApiClass) {
+        // +[QMBeaconApi getQIMEI] (类方法)
+        SEL sel = sel_registerName("getQIMEI");
+        Method m = class_getClassMethod(QMBeaconApiClass, sel);
+        if (m) {
+            orig_QMBeaconApi_getQIMEI = (NSString *(*)(id, SEL))method_getImplementation(m);
+            method_setImplementation(m, (IMP)hook_QMBeaconApi_getQIMEI);
+            NSLog(@"[HOOK] ✅[QMBeaconApi]: +getQIMEI");
+        }
+        
+        // +[QMBeaconApi getQimeiNew]
+        SEL getQimeiNewSel = sel_registerName("getQimeiNew");
+        Method getQimeiNewMethod = class_getClassMethod(QMBeaconApiClass, getQimeiNewSel);
+        if (getQimeiNewMethod) {
+            orig_QMBeaconApi_getQimeiNew = (NSString *(*)(id, SEL))method_getImplementation(getQimeiNewMethod);
+            method_setImplementation(getQimeiNewMethod, (IMP)hook_QMBeaconApi_getQimeiNew);
+            NSLog(@"[HOOK] ✅[QMBeaconApi]: +getQimeiNew");
+        }
+    }
+
+    // QMBeaconHelper
+    Class QMBeaconHelperClass = objc_getClass("QMBeaconHelper");
+    if (QMBeaconHelperClass) {
+        // +[QMBeaconHelper getQimei]
+        SEL sel = sel_registerName("getQimei");
+        Method m = class_getClassMethod(QMBeaconHelperClass, sel);
+        if (m) {
+            orig_QMBeaconHelper_getQimei = (NSString *(*)(id, SEL))method_getImplementation(m);
+            method_setImplementation(m, (IMP)hook_QMBeaconHelper_getQimei);
+            NSLog(@"[HOOK] ✅[QMBeaconHelper]: +getQimei");
+        }
+
+        // +[QMBeaconHelper getQimeiNew]
+        /*
+    + (NSString *)getQimeiNew {
+    NSString *qimei = [QMBeaconHelper getQimeiNew];
+    if (qimei.length > 0) {
+        return [qimei copy];
+    }
+    return [Base64Helper decode_str_to_str:@"YjkyNTA5MmNlNzFlNTE3NzQwNzE1ODdjMTAwMDEzZjE0YTAx"];
+    }
+    */
+        SEL getQimeiNewSel = sel_registerName("getQimeiNew");
+        Method getQimeiNewMethod = class_getClassMethod(QMBeaconHelperClass, getQimeiNewSel);
+        if (getQimeiNewMethod) {
+            orig_QMBeaconHelper_getQimeiNew = (NSString *(*)(id, SEL))method_getImplementation(getQimeiNewMethod);
+            method_setImplementation(getQimeiNewMethod, (IMP)hook_QMBeaconHelper_getQimeiNew);
+            NSLog(@"[HOOK] ✅[QMBeaconHelper]: +getQimeiNew");
+        }
+    }
+}
+
+// ---------- Hook qimei36 相关方法的通用 hook ----------
+/* 使用字典存储原始实现
+static NSMutableDictionary *qimei36_orig_imps = nil;
+static void init_qimei36_storage(void) {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        qimei36_orig_imps = [NSMutableDictionary dictionary];
+    });
+}
+
+// 为每个方法创建独立的 hook 函数
+// 使用 NSInvocation 来正确处理参数和返回值
+static id hook_qimei36_method_common(id self, SEL _cmd, ...) {
+    @autoreleasepool {
+        const char *selName = sel_getName(_cmd);
+        const char *className = object_getClassName(self);
+        
+        // 获取原始实现
+        NSString *key = [NSString stringWithFormat:@"%s_%s", className, selName];
+        NSValue *impValue = qimei36_orig_imps[key];
+        if (!impValue) {
+            // 尝试类方法格式
+            key = [NSString stringWithFormat:@"+%s_%s", className, selName];
+            impValue = qimei36_orig_imps[key];
+        }
+        
+        if (!impValue) {
+            NSLog(@"[HOOK] [qimei36] ERROR: No original IMP for -[%s %s]", className, selName);
+            return nil;
+        }
+        
+        IMP origImp = [impValue pointerValue];
+        if (!origImp) {
+            NSLog(@"[HOOK] [qimei36] ERROR: Invalid IMP for -[%s %s]", className, selName);
+            return nil;
+        }
+        
+        // 获取方法签名
+        NSMethodSignature *signature = nil;
+        Class cls = object_getClass(self);
+        if (cls) {
+            signature = [cls instanceMethodSignatureForSelector:_cmd];
+            if (!signature) {
+                // 尝试类方法
+                signature = [cls methodSignatureForSelector:_cmd];
+            }
+        }
+        
+        if (!signature) {
+            NSLog(@"[HOOK] [qimei36] Called: -[%s %s] (no signature, using simple call)", className, selName);
+            // 简单调用（假设返回 id）
+            return ((id (*)(id, SEL, ...))origImp)(self, _cmd);
+        }
+        
+        // 使用 NSInvocation 来正确处理参数和返回值
+        NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+        [invocation setTarget:self];
+        [invocation setSelector:_cmd];
+        
+        // 读取参数
+        va_list args;
+        va_start(args, _cmd);
+        
+        NSUInteger argCount = [signature numberOfArguments];
+        
+        // 从索引 2 开始（0=self, 1=_cmd）
+        NSMutableString *argsLog = [NSMutableString string];
+        for (NSUInteger i = 2; i < argCount; i++) {
+            const char *argType = [signature getArgumentTypeAtIndex:i];
+            
+            if (argType[0] == '@') {
+                // 对象类型
+                id arg = va_arg(args, id);
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                
+                NSString *argStr = arg ? [NSString stringWithFormat:@"%@", arg] : @"<nil>";
+                [argsLog appendFormat:@"arg%lu: %@ ", (unsigned long)(i-2), argStr];
+            } else if (argType[0] == 'i' || argType[0] == 'I') {
+                // int
+                int arg = va_arg(args, int);
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                [argsLog appendFormat:@"arg%lu: %d ", (unsigned long)(i-2), arg];
+            } else if (argType[0] == 'l' || argType[0] == 'L') {
+                // long
+                long arg = va_arg(args, long);
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                [argsLog appendFormat:@"arg%lu: %ld ", (unsigned long)(i-2), arg];
+            } else if (argType[0] == 'q' || argType[0] == 'Q') {
+                // long long
+                long long arg = va_arg(args, long long);
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                [argsLog appendFormat:@"arg%lu: %lld ", (unsigned long)(i-2), arg];
+            } else if (argType[0] == 'f') {
+                // float
+                float arg = (float)va_arg(args, double); // va_arg 中 float 会提升为 double
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                [argsLog appendFormat:@"arg%lu: %f ", (unsigned long)(i-2), arg];
+            } else if (argType[0] == 'd') {
+                // double
+                double arg = va_arg(args, double);
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                [argsLog appendFormat:@"arg%lu: %f ", (unsigned long)(i-2), arg];
+            } else if (argType[0] == 'B') {
+                // bool
+                bool arg = (bool)va_arg(args, int); // bool 在 va_arg 中通常用 int
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                [argsLog appendFormat:@"arg%lu: %s ", (unsigned long)(i-2), arg ? "YES" : "NO"];
+            } else {
+                // 其他类型，尝试作为指针
+                void *arg = va_arg(args, void *);
+                [invocation setArgument:&arg atIndex:(NSInteger)i];
+                [argsLog appendFormat:@"arg%lu: <type: %s> ", (unsigned long)(i-2), argType];
+            }
+        }
+        
+        va_end(args);
+        
+        // 打印方法调用信息
+        if (argsLog.length > 0) {
+            NSLog(@"[HOOK] [qimei36] Called: -[%s %s] | Args: %@", className, selName, argsLog);
+        } else {
+            NSLog(@"[HOOK] [qimei36] Called: -[%s %s] | Args: (none)", className, selName);
+        }
+        
+        // 临时恢复原始实现，避免无限递归
+        Class targetClass = object_getClass(self);
+        Method method = class_getInstanceMethod(targetClass, _cmd);
+        if (!method) {
+            method = class_getClassMethod(targetClass, _cmd);
+        }
+        
+        IMP savedHookImp = nil;
+        if (method) {
+            savedHookImp = method_getImplementation(method);
+            method_setImplementation(method, origImp);
+        }
+        
+        // 调用原始实现
+        id returnValue = nil;
+        @try {
+            // 使用 NSInvocation 调用，此时会调用原始实现（因为我们已经临时恢复了）
+            [invocation invoke];
+            
+            // 获取返回值
+            const char *returnType = [signature methodReturnType];
+            
+            if (returnType[0] == '@') {
+                // 对象类型
+                __unsafe_unretained id ret = nil;
+                [invocation getReturnValue:&ret];
+                returnValue = ret;
+                NSLog(@"[HOOK] [qimei36] Return: -[%s %s] = %@", className, selName, returnValue ?: @"<nil>");
+            } else if (returnType[0] == 'v') {
+                NSLog(@"[HOOK] [qimei36] Return: -[%s %s] = <void>", className, selName);
+            } else if (returnType[0] == 'i' || returnType[0] == 'I') {
+                int ret = 0;
+                [invocation getReturnValue:&ret];
+                NSLog(@"[HOOK] [qimei36] Return: -[%s %s] = %d", className, selName, ret);
+            } else if (returnType[0] == 'l' || returnType[0] == 'L') {
+                long ret = 0;
+                [invocation getReturnValue:&ret];
+                NSLog(@"[HOOK] [qimei36] Return: -[%s %s] = %ld", className, selName, ret);
+            } else if (returnType[0] == 'q' || returnType[0] == 'Q') {
+                long long ret = 0;
+                [invocation getReturnValue:&ret];
+                NSLog(@"[HOOK] [qimei36] Return: -[%s %s] = %lld", className, selName, ret);
+            } else if (returnType[0] == 'B') {
+                bool ret = false;
+                [invocation getReturnValue:&ret];
+                NSLog(@"[HOOK] [qimei36] Return: -[%s %s] = %s", className, selName, ret ? "YES" : "NO");
+            } else {
+                NSLog(@"[HOOK] [qimei36] Return: -[%s %s] = <type: %s>", className, selName, returnType);
+            }
+        } @catch (NSException *exception) {
+            NSLog(@"[HOOK] [qimei36] ERROR: Exception calling -[%s %s]: %@", className, selName, exception);
+        } @finally {
+            // 恢复 hook 实现
+            if (method && savedHookImp) {
+                method_setImplementation(method, savedHookImp);
+            }
+        }
+        
+        // 打印调用栈（前5行）
+        NSArray *callStackSymbols = [NSThread callStackSymbols];
+        NSUInteger limit = MIN(5, callStackSymbols.count);
+        for (NSUInteger i = 0; i < limit; i++) {
+            NSLog(@"[HOOK] [qimei36]   Stack[%lu]: %@", (unsigned long)i, callStackSymbols[i]);
+        }
+        
+        return returnValue;
+    }
+}
+
+// 扫描并 hook 所有包含 qimei36 的方法
+static void scanAndHookQimei36Methods(void) {
+    @autoreleasepool {
+        init_qimei36_storage();
+        
+        NSLog(@"[HOOK] [qimei36] Starting scan for methods containing 'qimei36'...");
+        
+        unsigned int classCount = 0;
+        Class *classes = objc_copyClassList(&classCount);
+        
+        if (!classes || classCount == 0) {
+            NSLog(@"[HOOK] [qimei36] No classes found");
+            return;
+        }
+        
+        int foundCount = 0;
+        int hookedCount = 0;
+        const char *keyword = "qimei36";
+        
+        for (unsigned int i = 0; i < classCount; i++) {
+            @autoreleasepool {
+                Class cls = classes[i];
+                if (!cls) continue;
+                
+                const char *className = class_getName(cls);
+                if (!className) continue;
+                
+                // 扫描实例方法
+                unsigned int methodCount = 0;
+                Method *methods = class_copyMethodList(cls, &methodCount);
+                
+                if (methods) {
+                    for (unsigned int j = 0; j < methodCount; j++) {
+                        Method m = methods[j];
+                        SEL sel = method_getName(m);
+                        const char *selName = sel_getName(sel);
+                        
+                        if (selName && strcasestr(selName, keyword)) {
+                            foundCount++;
+                            NSLog(@"[HOOK] [qimei36] Found: -[%s %s]", className, selName);
+                            
+                            // 获取方法类型编码
+                            const char *types = method_getTypeEncoding(m);
+                            if (types) {
+                                // 保存原始实现
+                                IMP origImp = method_getImplementation(m);
+                                
+                                // 保存到字典（使用类名+方法名作为key）
+                                NSString *key = [NSString stringWithFormat:@"%s_%s", className, selName];
+                                [qimei36_orig_imps setObject:[NSValue valueWithPointer:origImp] forKey:key];
+                                
+                                // 创建 hook 实现
+                                IMP hookImp = (IMP)hook_qimei36_method_common;
+                                
+                                // 替换实现
+                                method_setImplementation(m, hookImp);
+                                
+                                hookedCount++;
+                                NSLog(@"[HOOK] [qimei36] Hooked: -[%s %s]", className, selName);
+                            }
+                        }
+                    }
+                    free(methods);
+                }
+                
+                // 扫描类方法（元类）
+                Class metaClass = object_getClass((id)cls);
+                if (metaClass && metaClass != cls) {
+                    unsigned int classMethodCount = 0;
+                    Method *classMethods = class_copyMethodList(metaClass, &classMethodCount);
+                    
+                    if (classMethods) {
+                        for (unsigned int j = 0; j < classMethodCount; j++) {
+                            Method m = classMethods[j];
+                            SEL sel = method_getName(m);
+                            const char *selName = sel_getName(sel);
+                            
+                            // 跳过类方法中的特殊方法
+                            if (selName && strcmp(selName, "load") != 0 && strcmp(selName, "initialize") != 0) {
+                                if (strcasestr(selName, keyword)) {
+                                    foundCount++;
+                                    NSLog(@"[HOOK] [qimei36] Found: +[%s %s]", className, selName);
+                                    
+                                    const char *types = method_getTypeEncoding(m);
+                                    if (types) {
+                                        IMP origImp = method_getImplementation(m);
+                                        
+                                        NSString *key = [NSString stringWithFormat:@"+%s_%s", className, selName];
+                                        [qimei36_orig_imps setObject:[NSValue valueWithPointer:origImp] forKey:key];
+                                        
+                                        IMP hookImp = (IMP)hook_qimei36_method_common;
+                                        method_setImplementation(m, hookImp);
+                                        
+                                        hookedCount++;
+                                        NSLog(@"[HOOK] [qimei36] Hooked: +[%s %s]", className, selName);
+                                    }
+                                }
+                            }
+                        }
+                        free(classMethods);
+                    }
+                }
+            }
+        }
+        
+        free(classes);
+        NSLog(@"[HOOK] [qimei36] Scan complete: Found %d methods, Hooked %d methods", foundCount, hookedCount);
+    }
+}
+*/
+
 // ---------- 安装 swizzle helper ----------
 static void swizzle_instance_method(Class cls, SEL sel, IMP newImp, IMP *origImpStorage, const char *types) {
     if (!cls) return;
@@ -773,11 +1204,56 @@ static void swizzle_instance_method(Class cls, SEL sel, IMP newImp, IMP *origImp
     }
 }
 
+// ---------- 反检测：Hook 常见的防注入检测函数 ----------
+// Hook _dyld_image_count 和 _dyld_get_image_name 来隐藏 dylib 注入
+static uint32_t (*orig_dyld_image_count)(void) = NULL;
+static uint32_t hook_dyld_image_count(void) {
+    uint32_t count = orig_dyld_image_count();
+    // 可以返回原始值，或者过滤掉我们的 dylib
+    return count;
+}
+
+static const char* (*orig_dyld_get_image_name)(uint32_t image_index) = NULL;
+static const char* hook_dyld_get_image_name(uint32_t image_index) {
+    const char* name = orig_dyld_get_image_name(image_index);
+    // 如果检测到我们的 dylib 名称，可以返回 NULL 或伪造名称
+    if (name && strstr(name, "HookKuGou") != NULL) {
+        // 可以选择隐藏或返回原始值
+        // return NULL; // 隐藏我们的 dylib
+    }
+    return name;
+}
+
+// Hook dlopen 来隐藏动态库加载
+static void* (*orig_dlopen)(const char* path, int mode) = NULL;
+static void* hook_dlopen(const char* path, int mode) {
+    // 可以记录或过滤某些库的加载
+    void* handle = orig_dlopen(path, mode);
+    return handle;
+}
+
+// Hook sysctl 来隐藏进程信息（如果应用检测进程列表）
+static int (*orig_sysctl)(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp, size_t newlen) = NULL;
+static int hook_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp, size_t newlen) {
+    int result = orig_sysctl(name, namelen, oldp, oldlenp, newp, newlen);
+    // 可以在这里过滤某些进程信息
+    return result;
+}
+
+
 // ---------- constructor: 安装所有 hook ----------
 __attribute__((constructor))
 static void init_hooks(void) {
     @autoreleasepool {
         NSLog(@"[HOOK] init_hooks called");
+        // Hook dyld 相关函数（使用 fishhook）
+        struct rebinding dyld_rebindings[] = {
+            {"_dyld_image_count", (void *)hook_dyld_image_count, (void **)&orig_dyld_image_count},
+            {"_dyld_get_image_name", (void *)hook_dyld_get_image_name, (void **)&orig_dyld_get_image_name},
+            {"dlopen", (void *)hook_dlopen, (void **)&orig_dlopen},
+            {"sysctl", (void *)hook_sysctl, (void **)&orig_sysctl}
+        };
+        rebind_symbols(dyld_rebindings, 4);
         // fishhook 替换 sysctlbyname
         struct rebinding rbs[3];
 
@@ -889,6 +1365,14 @@ static void init_hooks(void) {
             NSLog(@"[HOOK] hooked -[TMEWebUserAgent readLocalUserAgentCaches]");
         }
 
+        // hook_all_qimei36_methods qimei36 方法（立即尝试，如果失败则延迟重试）
+        hook_all_qimei36_methods();
+
         NSLog(@"[HOOK] hooks installed");
+        
+        // 延迟扫描 qimei36 相关方法，等待所有类加载完成
+        // dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        //     scanAndHookQimei36Methods();
+        // });
     }
 }
