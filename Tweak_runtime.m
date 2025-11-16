@@ -763,62 +763,54 @@ static id hook_TMEWebUserAgent_readLocalUserAgentCaches(id self, SEL _cmd) {
 
 // ---------- Hook 多个类的 qimei36 相关方法（统一返回 123456789） ----------
 // +[QMBeaconApi getQIMEI]
-static NSString *(*orig_QMBeaconApi_getQIMEI)(id, SEL) = NULL;
-static NSString *hook_QMBeaconApi_getQIMEI(id self, SEL _cmd) {
-    NSDictionary *cfg = configDict();
-    NSString *qimei = cfg[@"qimei"];
-    if (qimei.length > 0) {
-        NSLog(@"[HOOK] [QMBeaconApi] Called: +getQIMEI 新值: %@", qimei);
-        return qimei;
-    }
-    // 如果配置为空，使用原值
-    NSString *originalValue = orig_QMBeaconApi_getQIMEI ? orig_QMBeaconApi_getQIMEI(self, _cmd) : nil;
-    NSLog(@"[HOOK] [QMBeaconApi] Called: +getQIMEI 原值: %@", originalValue ?: @"");
-    return originalValue;
-}
+// static NSString *(*orig_QMBeaconApi_getQIMEI)(id, SEL) = NULL;
+// static NSString *hook_QMBeaconApi_getQIMEI(id self, SEL _cmd) {
+//     NSString *originalValue = orig_QMBeaconApi_getQIMEI(self, _cmd);
+//     NSDictionary *cfg = configDict();
+//     NSString *qimei = cfg[@"qimei"];
+//     NSLog(@"[HOOK] [QMBeaconApi] Called: +getQIMEI 原值: %@ 新值: %@", originalValue, qimei);
+//     if (qimei.length > 0) {
+//         return qimei;
+//     }
+//     return originalValue;
+// }
 
-// +[QMBeaconApi getQimeiNew]
-static NSString *(*orig_QMBeaconApi_getQimeiNew)(id, SEL) = NULL;
-static NSString *hook_QMBeaconApi_getQimeiNew(id self, SEL _cmd) {
-    NSDictionary *cfg = configDict();
-    NSString *qimei = cfg[@"qimei"];
-    if (qimei.length > 0) {
-        NSLog(@"[HOOK] [QMBeaconApi] Called: +getQimeiNew 新值: %@", qimei);
-        return qimei;
-    }
-    // 如果配置为空，使用原值
-    NSString *originalValue = orig_QMBeaconApi_getQimeiNew ? orig_QMBeaconApi_getQimeiNew(self, _cmd) : nil;
-    NSLog(@"[HOOK] [QMBeaconApi] Called: +getQimeiNew 原值: %@", originalValue ?: @"");
-    return originalValue;
-}
+// // +[QMBeaconApi getQimeiNew]
+// static NSString *(*orig_QMBeaconApi_getQimeiNew)(id, SEL) = NULL;
+// static NSString *hook_QMBeaconApi_getQimeiNew(id self, SEL _cmd) {
+//     NSString *originalValue = orig_QMBeaconApi_getQimeiNew(self, _cmd);
+//     NSDictionary *cfg = configDict();
+//     NSString *qimei = cfg[@"qimei"];
+//     NSLog(@"[HOOK] [QMBeaconApi] Called: +getQimeiNew 原值: %@ 新值: %@", originalValue, qimei);
+//     if (qimei.length > 0) {
+//         return qimei;
+//     }
+//     return originalValue;
+// }
 
 // +[QMBeaconHelper getQimei]
 static NSString *(*orig_QMBeaconHelper_getQimei)(id, SEL) = NULL;
 static NSString *hook_QMBeaconHelper_getQimei(id self, SEL _cmd) {
+    NSString *originalValue = orig_QMBeaconHelper_getQimei ? orig_QMBeaconHelper_getQimei(self, _cmd) : nil;
     NSDictionary *cfg = configDict();
     NSString *qimei = cfg[@"qimei"];
+    NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimei 原值: %@ 新值: %@", originalValue, qimei);
     if (qimei.length > 0) {
-        NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimei 新值: %@", qimei);
         return qimei;
     }
-    // 如果配置为空，使用原值
-    NSString *originalValue = orig_QMBeaconHelper_getQimei ? orig_QMBeaconHelper_getQimei(self, _cmd) : nil;
-    NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimei 原值: %@", originalValue ?: @"");
     return originalValue;
 }
 
 // +[QMBeaconHelper getQimeiNew]
 static NSString *(*orig_QMBeaconHelper_getQimeiNew)(id, SEL) = NULL;
 static NSString *hook_QMBeaconHelper_getQimeiNew(id self, SEL _cmd) {
+    NSString *originalValue = orig_QMBeaconHelper_getQimeiNew(self, _cmd);
     NSDictionary *cfg = configDict();
     NSString *qimei = cfg[@"qimei"];
+    NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimeiNew 原值: %@ 新值: %@", originalValue, qimei);
     if (qimei.length > 0) {
-        NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimeiNew 新值: %@", qimei);
         return qimei;
     }
-    // 如果配置为空，使用原值
-    NSString *originalValue = orig_QMBeaconHelper_getQimeiNew ? orig_QMBeaconHelper_getQimeiNew(self, _cmd) : nil;
-    NSLog(@"[HOOK] [QMBeaconHelper] Called: +getQimeiNew 原值: %@", originalValue ?: @"");
     return originalValue;
 }
 
@@ -832,26 +824,26 @@ static void hook_all_qimei36_methods(void) {
     // [Base64Helper decode_str_to_str:@"YjkyNTA5MmNlNzFlNTE3NzQwNzE1ODdjMTAwMDEzZjE0YTAx"];
 
     // QMBeaconApi 类方法
-    Class QMBeaconApiClass = objc_getClass("QMBeaconApi");
-    if (QMBeaconApiClass) {
-        // +[QMBeaconApi getQIMEI] (类方法)
-        SEL sel = sel_registerName("getQIMEI");
-        Method m = class_getClassMethod(QMBeaconApiClass, sel);
-        if (m) {
-            orig_QMBeaconApi_getQIMEI = (NSString *(*)(id, SEL))method_getImplementation(m);
-            method_setImplementation(m, (IMP)hook_QMBeaconApi_getQIMEI);
-            NSLog(@"[HOOK] ✅[QMBeaconApi]: +getQIMEI");
-        }
+    // Class QMBeaconApiClass = objc_getClass("QMBeaconApi");
+    // if (QMBeaconApiClass) {
+    //     // +[QMBeaconApi getQIMEI] (类方法)
+    //     SEL sel = sel_registerName("getQIMEI");
+    //     Method m = class_getClassMethod(QMBeaconApiClass, sel);
+    //     if (m) {
+    //         orig_QMBeaconApi_getQIMEI = (NSString *(*)(id, SEL))method_getImplementation(m);
+    //         method_setImplementation(m, (IMP)hook_QMBeaconApi_getQIMEI);
+    //         NSLog(@"[HOOK] ✅[QMBeaconApi]: +getQIMEI");
+    //     }
         
-        // +[QMBeaconApi getQimeiNew]
-        SEL getQimeiNewSel = sel_registerName("getQimeiNew");
-        Method getQimeiNewMethod = class_getClassMethod(QMBeaconApiClass, getQimeiNewSel);
-        if (getQimeiNewMethod) {
-            orig_QMBeaconApi_getQimeiNew = (NSString *(*)(id, SEL))method_getImplementation(getQimeiNewMethod);
-            method_setImplementation(getQimeiNewMethod, (IMP)hook_QMBeaconApi_getQimeiNew);
-            NSLog(@"[HOOK] ✅[QMBeaconApi]: +getQimeiNew");
-        }
-    }
+    //     // +[QMBeaconApi getQimeiNew]
+    //     SEL getQimeiNewSel = sel_registerName("getQimeiNew");
+    //     Method getQimeiNewMethod = class_getClassMethod(QMBeaconApiClass, getQimeiNewSel);
+    //     if (getQimeiNewMethod) {
+    //         orig_QMBeaconApi_getQimeiNew = (NSString *(*)(id, SEL))method_getImplementation(getQimeiNewMethod);
+    //         method_setImplementation(getQimeiNewMethod, (IMP)hook_QMBeaconApi_getQimeiNew);
+    //         NSLog(@"[HOOK] ✅[QMBeaconApi]: +getQimeiNew");
+    //     }
+    // }
 
     // QMBeaconHelper
     Class QMBeaconHelperClass = objc_getClass("QMBeaconHelper");
