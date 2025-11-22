@@ -3,83 +3,97 @@
 
 const WATCH_KEYS = ["UserAgent", "SystemUserAgent", "kTencentStatic_Qimei"];
 
-function safeToString(ptr) {
-    if (!ptr || ptr.isNull()) return null;
+function quickCheckKey(keyPtr) {
+    if (!keyPtr || keyPtr.isNull()) return false;
     try {
-        return ObjC.Object(ptr).toString();
+        var key = ObjC.Object(keyPtr).toString();
+        if (!key) return false;
+        for (var i = 0; i < WATCH_KEYS.length; i++) {
+            if (key.indexOf(WATCH_KEYS[i]) !== -1) return true;
+        }
+        return false;
     } catch (e) {
-        return null;
+        return false;
     }
 }
 
-function isWatchedKey(key) {
-    return key && WATCH_KEYS.some(k => key.indexOf(k) !== -1);
+function safeDescribeValue(ptr) {
+    if (!ptr || ptr.isNull()) return "<nil>";
+    try {
+        var obj = ObjC.Object(ptr);
+        // 只处理字符串类型，其他类型简单显示
+        try {
+            var className = obj.$className;
+            if (className === "NSString" || className === "__NSCFString" || className === "__NSCFConstantString") {
+                return obj.toString();
+            }
+            return "[" + className + "]";
+        } catch (e) {
+            // 如果无法获取类名，尝试直接转字符串
+            try {
+                return obj.toString();
+            } catch (e2) {
+                return "<unknown>";
+            }
+        }
+    } catch (e) {
+        return "<unknown>";
+    }
 }
 
 if (!ObjC.available) {
-    console.log("[WARN] ObjC not available");
-    throw new Error("ObjC not available");
-}
-
-try {
-    const NSUserDefaults = ObjC.classes.NSUserDefaults;
-
-    // Hook objectForKey: - 只观察，不修改
-    Interceptor.attach(NSUserDefaults["- objectForKey:"].implementation, {
-        onEnter: function(args) {
-            this._keyPtr = args[2];
-        },
-        onLeave: function(retval) {
-            if (!this._keyPtr || this._keyPtr.isNull()) return;
-            
-            let key = null;
-            try {
-                key = safeToString(this._keyPtr);
-            } catch (e) {
-                return;
-            }
-            
-            if (!isWatchedKey(key)) return;
-            
-            try {
-                let value = "<nil>";
-                if (retval && !retval.isNull()) {
-                    const retObj = safeToString(retval);
-                    value = retObj || "<non-string>";
+    console.log("Objective-C runtime is not available!");
+} else {
+    try {
+        var NSUserDefaults = ObjC.classes.NSUserDefaults;
+        var sel1 = "- objectForKey:";
+        var sel2 = "- setObject:forKey:";
+        
+        if (NSUserDefaults && NSUserDefaults[sel1]) {
+            Interceptor.attach(NSUserDefaults[sel1].implementation, {
+                onEnter: function(args) {
+                    // 快速检查 key，不匹配则跳过
+                    this._shouldLog = quickCheckKey(args[2]);
+                    if (this._shouldLog) {
+                        this._keyPtr = args[2];
+                    }
+                },
+                onLeave: function(retval) {
+                    if (!this._shouldLog) return;
+                    try {
+                        var key = ObjC.Object(this._keyPtr).toString();
+                        var value = safeDescribeValue(retval);
+                        console.log("[objectForKey] " + key + " => " + value);
+                    } catch (e) {}
                 }
-                console.log(`[objectForKey] ${key} => ${value}`);
-            } catch (e) {}
+            });
         }
-    });
-
-    // Hook setObject:forKey: - 只观察
-    Interceptor.attach(NSUserDefaults["- setObject:forKey:"].implementation, {
-        onEnter: function(args) {
-            this._keyPtr = args[3];
-            this._valuePtr = args[2];
-        },
-        onLeave: function(retval) {
-            if (!this._keyPtr || this._keyPtr.isNull()) return;
-            
-            let key = null;
-            try {
-                key = safeToString(this._keyPtr);
-            } catch (e) {
-                return;
-            }
-            
-            if (!isWatchedKey(key)) return;
-            
-            try {
-                const value = safeToString(this._valuePtr) || "<nil>";
-                console.log(`[setObject:forKey:] ${key} = ${value}`);
-            } catch (e) {}
+        
+        if (NSUserDefaults && NSUserDefaults[sel2]) {
+            Interceptor.attach(NSUserDefaults[sel2].implementation, {
+                onEnter: function(args) {
+                    // 快速检查 key，不匹配则跳过
+                    this._shouldLog = quickCheckKey(args[3]);
+                    if (this._shouldLog) {
+                        this._keyPtr = args[3];
+                        this._valuePtr = args[2];
+                    }
+                },
+                onLeave: function(retval) {
+                    if (!this._shouldLog) return;
+                    try {
+                        var key = ObjC.Object(this._keyPtr).toString();
+                        var value = safeDescribeValue(this._valuePtr);
+                        console.log("[setObject:forKey:] " + key + " = " + value);
+                    } catch (e) {}
+                }
+            });
         }
-    });
-
-    console.log("[OK] NSUserDefaults hooks installed (watch only)");
-} catch (e) {
-    console.log("[ERR] Hook failed:", e);
+        
+        console.log("[OK] NSUserDefaults hooks installed (watch only)");
+    } catch (err) {
+        console.log("hook error:", err);
+    }
 }
 
 // --- 监控 NSDictionary 的 initWithContentsOfFile: / writeToFile:atomically: (直接读写 plist 的情况) ---
