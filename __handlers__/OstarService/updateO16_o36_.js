@@ -8,8 +8,11 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[OstarService updateO16:${args[2]} o36:${args[3]}]`);
+    log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },
 
   onLeave(log, retval, state) {
+    const objcObj = new ObjC.Object(retval);
+    log('👈: ' + objcObj.toString() + '（' + objcObj.$className + '）' + '\n');
   }
 });
