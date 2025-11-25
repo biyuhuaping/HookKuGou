@@ -8,7 +8,7 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm secureUpdateQimeiContent:${args[2]}]`);
-    objcObj1 = new ObjC.Object(args[2]);
+    let objcObj1 = ObjC.Object(args[2]);
     log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
   },
 

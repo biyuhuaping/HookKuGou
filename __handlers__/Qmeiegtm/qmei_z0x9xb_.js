@@ -8,12 +8,8 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_z0x9xb:${args[2]}]`);
-    objcObj1 = new ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
   },
 
   onLeave(log, retval, state) {
-    objcObj = new ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
   }
 });

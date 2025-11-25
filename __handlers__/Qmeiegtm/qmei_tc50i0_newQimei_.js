@@ -8,15 +8,15 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_tc50i0:${args[2]} newQimei:${args[3]}]`);
-    const objcObj1 = new ObjC.Object(args[2]);
-    const objcObj2 = new ObjC.Object(args[3]);
+    let objcObj1 = ObjC.Object(args[2]);
+    let objcObj2 = ObjC.Object(args[3]);
     log('👉' + objcObj1.toString() + '（' + objcObj1.$className + '）');
     log('👉' + objcObj2.toString() + '（' + objcObj2.$className + '）');
     log('stack: ' + Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },
 
   onLeave(log, retval, state) {
-    const objcObj = new ObjC.Object(retval);
+    let objcObj = ObjC.Object(retval);
     log('👈: ' + objcObj.$className + ' ' + objcObj.toString() + '\n');
   }
 });

@@ -8,18 +8,18 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_fgcupvyp:${args[2]} oldQ36:${args[3]} newQ16:${args[4]} newQ36:${args[5]}]`);
-    objcObj1 = new ObjC.Object(args[2]);
+    let objcObj1 = ObjC.Object(args[2]);
     log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    objcObj2 = new ObjC.Object(args[3]);
+    let objcObj2 = ObjC.Object(args[3]);
     log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
-    objcObj3 = new ObjC.Object(args[4]);
+    let objcObj3 = ObjC.Object(args[4]);
     log('👉'+ objcObj3.toString() + '（' + objcObj3.$className + '）');
-    objcObj4 = new ObjC.Object(args[5]);
+    let objcObj4 = ObjC.Object(args[5]);
     log('👉'+ objcObj4.toString() + '（' + objcObj4.$className + '）');
   },
 
   onLeave(log, retval, state) {
-    objcObj = new ObjC.Object(retval);
+    let objcObj = new ObjC.Object(retval);
     log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
   }
 });

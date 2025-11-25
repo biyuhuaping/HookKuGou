@@ -8,7 +8,7 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[KGDeviceFPManager setDeviceFingerprintID:${args[2]}]`);
-    const objcObj = new ObjC.Object(args[2]);
+    let objcObj = ObjC.Object(args[2]);
     log('👉'+ objcObj.toString() + '（' + objcObj.$className + '）');
   },
 

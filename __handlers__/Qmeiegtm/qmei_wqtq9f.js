@@ -8,12 +8,20 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_wqtq9f]`);
-    objcObj1 = new ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
+    // if (!args[2].isNull()) {
+    //   const objcObj1 = new ObjC.Object(args[2]);
+    //   log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
+    // } else {
+    //   log('👉 arg0 is nil');
+    // }
   },
 
   onLeave(log, retval, state) { 
-    objcObj = new ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
+    // if (retval.isNull()) {
+    //   log('👈: retval is nil\n');
+    //   return;
+    // }
+    // const objcObj = new ObjC.Object(retval);
+    // log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
   }
 });

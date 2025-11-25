@@ -8,7 +8,7 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`+[UICKeyChainStore stringForKey:${args[2]} service:${args[3]}]`);
-    const objcObj1 = new ObjC.Object(args[2]);
+    let objcObj1 = ObjC.Object(args[2]);
     const objcObj2 = new ObjC.Object(args[3]);
     log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
     log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');

@@ -8,14 +8,14 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm handlerPostUseTimeWithLocalTime:${args[2]} totalTime:${args[3]}]`);
-    objcObj1 = new ObjC.Object(args[2]);
+    let objcObj1 = ObjC.Object(args[2]);
     log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    objcObj2 = new ObjC.Object(args[3]);
+    let objcObj2 = ObjC.Object(args[3]);
     log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
   },
 
   onLeave(log, retval, state) {
-    objcObj = new ObjC.Object(retval);
+    let objcObj = ObjC.Object(retval);
     log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
   }
 });

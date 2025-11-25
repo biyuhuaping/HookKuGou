@@ -8,7 +8,7 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[OstarService setUserId:${args[2]} forType:${args[3]}]`);
-    const objcObj1 = new ObjC.Object(args[2]);
+    let objcObj1 = ObjC.Object(args[2]);
     const objcObj2 = new ObjC.Object(args[3]);
     log('👉类型: ' + objcObj1.$className  + ' 值: ' + objcObj1.toString());
     log('👉类型: ' + objcObj2.$className  + ' 值: ' + objcObj2.toString());
