@@ -1,13 +1,20 @@
-// 运行方式：frida -U -f com.kugou.kugou1002 -l Tools/tmp.js 
-//0x11331B4F0
-var tmpFun = Module.findBaseAddress("kugou").add(0x113045DE0);
-Interceptor.attach(tmpFun, {
-    onEnter: function (args) {
-        console.log('👉 tmpFun onEnter');
-        // console.log(hexdump(args[0]));
-    },
-    onLeave: function (retval) {
-        console.log('👉 tmpFun onLeave');
-        // console.log(hexdump(retval));
+if (!ObjC.available) {
+    console.log("Objective-C Runtime 不可用");
+    return;
+  }
+  
+  var UICKeyChainStore = ObjC.classes.UICKeyChainStore;
+  if (!UICKeyChainStore) {
+    console.log("未找到 UICKeyChainStore 类，确认当前进程已加载相关模块");
+    return;
+  }
+  
+  // 主线程上调用，避免 UI 线程安全问题
+  ObjC.schedule(ObjC.mainQueue, function () {
+    try {
+      UICKeyChainStore.removeAllItems();
+      console.log("[+] 已调用 +[UICKeyChainStore removeAllItems]");
+    } catch (e) {
+      console.log("[-] 调用失败: " + e);
     }
-});
+  });

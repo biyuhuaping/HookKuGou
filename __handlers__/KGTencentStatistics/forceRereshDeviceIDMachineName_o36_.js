@@ -8,10 +8,11 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[KGTencentStatistics forceRereshDeviceIDMachineName:${args[2]} o36:${args[3]}]`);
-    const objcObj1 = new ObjC.Object(args[2]);
-    const objcObj2 = new ObjC.Object(args[3]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
+    // const objcObj1 = new ObjC.Object(args[2]);
+    // const objcObj2 = new ObjC.Object(args[3]);
+    // log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
+    // log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
+    // log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },
 
   onLeave(log, retval, state) {

@@ -12,10 +12,11 @@ defineHandler({
     log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
     objcObj2 = new ObjC.Object(args[3]);
     log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
+    log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },
 
   onLeave(log, retval, state) {
-    objcObj = new ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
+    const objcObj = new ObjC.Object(retval);
+    log('👈: ' + objcObj.toString() + '（' + objcObj.$className + '）' + '\n');
   }
 });
