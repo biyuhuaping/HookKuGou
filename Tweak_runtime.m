@@ -174,7 +174,7 @@ static NSUUID *hook_ASID_advertisingIdentifier(id self, SEL _cmd) {
 static CGRect (*orig_UIScreen_bounds)(id, SEL) = NULL;
 static CGRect hook_UIScreen_bounds(id self, SEL _cmd) {
     CGRect value = orig_UIScreen_bounds(self, _cmd);
-    NSLog(@"[Hook] UIScreen.bounds = %.0f x %.0f", value.size.width, value.size.height);
+    // NSLog(@"[Hook] UIScreen.bounds = %.0f x %.0f", value.size.width, value.size.height);
 
     NSDictionary *config = configDict();
     NSNumber *dx = config[@"dx"];

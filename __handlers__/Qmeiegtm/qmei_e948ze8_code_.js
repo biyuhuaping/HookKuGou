@@ -3,21 +3,31 @@
  * This stub is currently auto-generated from manpages when available.
  *
  * For full API reference, see: https://frida.re/docs/javascript-api/
- */
+ */// 根据类型格式化输出 Objective-C 对象
+ function dumpArg(arg) {
+  if (arg.isNull()) return "NULL";
+
+  // 如果是可能的 Objective‑C 对象
+  try {
+      const obj = new ObjC.Object(arg);
+      return `[ObjC ${obj.$className}] ${obj.toString()}`;
+  } catch (e) {
+      // 不是 ObjC 对象，当作指针处理
+      return `[Ptr] ${arg} → ${hexdump(arg, { length: 32 })}`;
+  }
+}
 
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_e948ze8:${args[2]} code:${args[3]}]`);
-    let objcObj1 = new ObjC.Object(args[2]);
-    log('👉 ' + formatObjCObject(objcObj1));
-    let objcObj2 = new ObjC.Object(args[3]);
-    log('👉 ' + formatObjCObject(objcObj2));
-    // log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
+
+    log(`👉 arg0: ${args[0].$className}`);
+    log(`👉 arg1: ${args[1].$className}`);
+    log(`👉 arg2: ${hexdump(args[2])}`);
+    log(`👉 arg3: ${hexdump(args[3])}`);
   },
 
   onLeave(log, retval, state) {
-    log('👈: '+ retval.readUtf8String());
-    let objcObj = new ObjC.Object(retval);
-    log('👈 ' + formatObjCObject(objcObj) + '\n');
+    log(`👈 retval: ${hexdump(retval)}`);
   }
 });
