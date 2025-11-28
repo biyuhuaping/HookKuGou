@@ -647,114 +647,114 @@ static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, i
 
 // ========== Hook TMEWebUserAgent -readLocalUserAgentCaches ==========
 // 保存原 impl
-static id (*orig_TMEWebUserAgent_readLocalUserAgentCaches)(id, SEL) = NULL;
-static id hook_TMEWebUserAgent_readLocalUserAgentCaches(id self, SEL _cmd) {
-    @autoreleasepool {
-        id orig = nil;
-        if (orig_TMEWebUserAgent_readLocalUserAgentCaches) {
-            orig = orig_TMEWebUserAgent_readLocalUserAgentCaches(self, _cmd);
-        } else {
-            // 没有原 impl，则尽量不影响，返回 nil 或者空字典
-            NSLog(@"[HOOK] orig_TMEWebUserAgent_readLocalUserAgentCaches == NULL");
-            return orig;
-        }
+// static id (*orig_TMEWebUserAgent_readLocalUserAgentCaches)(id, SEL) = NULL;
+// static id hook_TMEWebUserAgent_readLocalUserAgentCaches(id self, SEL _cmd) {
+//     @autoreleasepool {
+//         id orig = nil;
+//         if (orig_TMEWebUserAgent_readLocalUserAgentCaches) {
+//             orig = orig_TMEWebUserAgent_readLocalUserAgentCaches(self, _cmd);
+//         } else {
+//             // 没有原 impl，则尽量不影响，返回 nil 或者空字典
+//             NSLog(@"[HOOK] orig_TMEWebUserAgent_readLocalUserAgentCaches == NULL");
+//             return orig;
+//         }
 
-        if (!orig) {
-            NSLog(@"[HOOK] readLocalUserAgentCaches returned nil");
-            return orig;
-        }
+//         if (!orig) {
+//             NSLog(@"[HOOK] readLocalUserAgentCaches returned nil");
+//             return orig;
+//         }
 
-        // 只处理字典类型
-        if (![orig isKindOfClass:[NSDictionary class]]) {
-            NSLog(@"[HOOK] readLocalUserAgentCaches returned non-dictionary: %@", [orig class]);
-            return orig;
-        }
+//         // 只处理字典类型
+//         if (![orig isKindOfClass:[NSDictionary class]]) {
+//             NSLog(@"[HOOK] readLocalUserAgentCaches returned non-dictionary: %@", [orig class]);
+//             return orig;
+//         }
 
-        NSMutableDictionary *m = [orig mutableCopy];
+//         NSMutableDictionary *m = [orig mutableCopy];
 
-        // 从配置读取目标版本，例如 "16.1.1"
-        NSDictionary *cfg = configDict();
-        NSString *sVersion = nil;
-        if ([cfg isKindOfClass:[NSDictionary class]]) {
-            sVersion = cfg[@"osv"];
-        }
-        if (!sVersion || ![sVersion isKindOfClass:[NSString class]] || sVersion.length == 0) {
-            // 没配置则不改动，返回原始字典
-            NSLog(@"[HOOK] readLocalUserAgentCaches: no osv in config -> no change");
-            return orig;
-        }
+//         // 从配置读取目标版本，例如 "16.1.1"
+//         NSDictionary *cfg = configDict();
+//         NSString *sVersion = nil;
+//         if ([cfg isKindOfClass:[NSDictionary class]]) {
+//             sVersion = cfg[@"osv"];
+//         }
+//         if (!sVersion || ![sVersion isKindOfClass:[NSString class]] || sVersion.length == 0) {
+//             // 没配置则不改动，返回原始字典
+//             NSLog(@"[HOOK] readLocalUserAgentCaches: no osv in config -> no change");
+//             return orig;
+//         }
 
-        // 把 "16.1.1" -> "16_1_1" （UA 中使用下划线）
-        NSString *underscored = [sVersion stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+//         // 把 "16.1.1" -> "16_1_1" （UA 中使用下划线）
+//         NSString *underscored = [sVersion stringByReplacingOccurrencesOfString:@"." withString:@"_"];
 
-        // 定义替换函数：把 "iPhone OS 16_7_11" 这类片段替换成 "iPhone OS <underscored>"
-        NSRegularExpression *re = nil;
-        NSError *reErr = nil;
-        // 捕获形如 "iPhone OS 16_7" 或 "iPhone OS 16_7_11" 的片段
-        re = [NSRegularExpression regularExpressionWithPattern:@"iPhone OS [0-9]+(?:_[0-9]+)*(?:_[0-9]+)?" options:0 error:&reErr];
-        if (reErr) {
-            NSLog(@"[HOOK] regex error: %@", reErr);
-            // 如果正则失败则还是尝试简单字符串替换 "16_7_11" -> underscored
-        }
+//         // 定义替换函数：把 "iPhone OS 16_7_11" 这类片段替换成 "iPhone OS <underscored>"
+//         NSRegularExpression *re = nil;
+//         NSError *reErr = nil;
+//         // 捕获形如 "iPhone OS 16_7" 或 "iPhone OS 16_7_11" 的片段
+//         re = [NSRegularExpression regularExpressionWithPattern:@"iPhone OS [0-9]+(?:_[0-9]+)*(?:_[0-9]+)?" options:0 error:&reErr];
+//         if (reErr) {
+//             NSLog(@"[HOOK] regex error: %@", reErr);
+//             // 如果正则失败则还是尝试简单字符串替换 "16_7_11" -> underscored
+//         }
 
-        NSArray<NSString *> *keysToPatch = @[@"SystemUserAgent", @"UserAgent"];
-        BOOL changed = NO;
-        for (NSString *k in keysToPatch) {
-            id v = m[k];
-            if (![v isKindOfClass:[NSString class]]) continue;
-            NSString *s = (NSString *)v;
-            NSString *newS = s;
+//         NSArray<NSString *> *keysToPatch = @[@"SystemUserAgent", @"UserAgent"];
+//         BOOL changed = NO;
+//         for (NSString *k in keysToPatch) {
+//             id v = m[k];
+//             if (![v isKindOfClass:[NSString class]]) continue;
+//             NSString *s = (NSString *)v;
+//             NSString *newS = s;
 
-            if (re) {
-                // 用 regex 替换 iPhone OS ... 部分
-                newS = [re stringByReplacingMatchesInString:newS options:0 range:NSMakeRange(0, newS.length) withTemplate:[NSString stringWithFormat:@"iPhone OS %@", underscored]];
-            } else {
-                // 回退：直接替换任意已有的数字点或下划线格式（更保守）
-                // 先把点改成下划线，然后寻找第一个 "iPhone OS " 后的版本并替换
-                NSRange r = [newS rangeOfString:@"iPhone OS "];
-                if (r.location != NSNotFound) {
-                    NSUInteger start = r.location + r.length;
-                    // 从 start 找到下一个 " like Mac OS X" 或者 ")" 作为结束
-                    NSRange endRange = [newS rangeOfString:@" like Mac OS X" options:0 range:NSMakeRange(start, newS.length - start)];
-                    NSUInteger end = (endRange.location != NSNotFound) ? endRange.location : newS.length;
-                    NSRange verRange = NSMakeRange(start, end - start);
-                    NSString *ver = [newS substringWithRange:verRange];
-                    // 将点改下划线
-                    NSString *ver2 = [ver stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-                    newS = [newS stringByReplacingCharactersInRange:verRange withString:ver2];
-                    // 之后再替换 ver2 为 underscored（确保一致）
-                    newS = [newS stringByReplacingOccurrencesOfString:ver2 withString:underscored];
-                }
-            }
+//             if (re) {
+//                 // 用 regex 替换 iPhone OS ... 部分
+//                 newS = [re stringByReplacingMatchesInString:newS options:0 range:NSMakeRange(0, newS.length) withTemplate:[NSString stringWithFormat:@"iPhone OS %@", underscored]];
+//             } else {
+//                 // 回退：直接替换任意已有的数字点或下划线格式（更保守）
+//                 // 先把点改成下划线，然后寻找第一个 "iPhone OS " 后的版本并替换
+//                 NSRange r = [newS rangeOfString:@"iPhone OS "];
+//                 if (r.location != NSNotFound) {
+//                     NSUInteger start = r.location + r.length;
+//                     // 从 start 找到下一个 " like Mac OS X" 或者 ")" 作为结束
+//                     NSRange endRange = [newS rangeOfString:@" like Mac OS X" options:0 range:NSMakeRange(start, newS.length - start)];
+//                     NSUInteger end = (endRange.location != NSNotFound) ? endRange.location : newS.length;
+//                     NSRange verRange = NSMakeRange(start, end - start);
+//                     NSString *ver = [newS substringWithRange:verRange];
+//                     // 将点改下划线
+//                     NSString *ver2 = [ver stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+//                     newS = [newS stringByReplacingCharactersInRange:verRange withString:ver2];
+//                     // 之后再替换 ver2 为 underscored（确保一致）
+//                     newS = [newS stringByReplacingOccurrencesOfString:ver2 withString:underscored];
+//                 }
+//             }
 
-            if (![newS isEqualToString:s]) {
-                m[k] = newS;
-                changed = YES;
-                NSLog(@"[HOOK] patched %@: \n  old: %@\n  new: %@", k, s, newS);
-            } else {
-                // 即使没有通过 regex 替换，也尝试直接把现有 xxx_xxx_xxx 替换为 underscored（保守替换）
-                // 匹配形如 \d+_\d+(?:_\d+)?
-                NSRegularExpression *numRe = [NSRegularExpression regularExpressionWithPattern:@"[0-9]+_[0-9]+(?:_[0-9]+)?" options:0 error:NULL];
-                if (numRe) {
-                    newS = [numRe stringByReplacingMatchesInString:newS options:0 range:NSMakeRange(0, newS.length) withTemplate:underscored];
-                    if (![newS isEqualToString:s]) {
-                        m[k] = newS;
-                        changed = YES;
-                        NSLog(@"[HOOK] fallback patched %@: \n  old: %@\n  new: %@", k, s, newS);
-                    }
-                }
-            }
-        }
+//             if (![newS isEqualToString:s]) {
+//                 m[k] = newS;
+//                 changed = YES;
+//                 NSLog(@"[HOOK] patched %@: \n  old: %@\n  new: %@", k, s, newS);
+//             } else {
+//                 // 即使没有通过 regex 替换，也尝试直接把现有 xxx_xxx_xxx 替换为 underscored（保守替换）
+//                 // 匹配形如 \d+_\d+(?:_\d+)?
+//                 NSRegularExpression *numRe = [NSRegularExpression regularExpressionWithPattern:@"[0-9]+_[0-9]+(?:_[0-9]+)?" options:0 error:NULL];
+//                 if (numRe) {
+//                     newS = [numRe stringByReplacingMatchesInString:newS options:0 range:NSMakeRange(0, newS.length) withTemplate:underscored];
+//                     if (![newS isEqualToString:s]) {
+//                         m[k] = newS;
+//                         changed = YES;
+//                         NSLog(@"[HOOK] fallback patched %@: \n  old: %@\n  new: %@", k, s, newS);
+//                     }
+//                 }
+//             }
+//         }
 
-        if (changed) {
-            NSDictionary *ret = [m copy];
-            return ret;
-        } else {
-            // 没改动则返回原来的对象（降低副作用）
-            return orig;
-        }
-    }
-}
+//         if (changed) {
+//             NSDictionary *ret = [m copy];
+//             return ret;
+//         } else {
+//             // 没改动则返回原来的对象（降低副作用）
+//             return orig;
+//         }
+//     }
+// }
 
 
 
@@ -1378,11 +1378,11 @@ static void init_hooks(void) {
         [defaults synchronize];
 
         // TMEWebUserAgent
-        Class TMEWebUserAgentClass = objc_getClass("TMEWebUserAgent");
-        if (TMEWebUserAgentClass) {
-            swizzle_instance_method(TMEWebUserAgentClass, @selector(readLocalUserAgentCaches), (IMP)hook_TMEWebUserAgent_readLocalUserAgentCaches, (IMP *)&orig_TMEWebUserAgent_readLocalUserAgentCaches, "@@:");
-            NSLog(@"[HOOK] hooked -[TMEWebUserAgent readLocalUserAgentCaches]");
-        }
+        // Class TMEWebUserAgentClass = objc_getClass("TMEWebUserAgent");
+        // if (TMEWebUserAgentClass) {
+        //     swizzle_instance_method(TMEWebUserAgentClass, @selector(readLocalUserAgentCaches), (IMP)hook_TMEWebUserAgent_readLocalUserAgentCaches, (IMP *)&orig_TMEWebUserAgent_readLocalUserAgentCaches, "@@:");
+        //     NSLog(@"[HOOK] hooked -[TMEWebUserAgent readLocalUserAgentCaches]");
+        // }
 
         // hook_all_qimei36_methods qimei36 方法（立即尝试，如果失败则延迟重试）
         hook_all_qimei36_methods();
