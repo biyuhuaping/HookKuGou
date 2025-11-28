@@ -8,8 +8,8 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[OstarService sdkVersion]`);
-    let objcObj = ObjC.Object(args[2]);
-    let objcObj1 = ObjC.Object(args[2]);
+    let objcObj = new ObjC.Object(args[2]);
+    let objcObj1 = new ObjC.Object(args[2]);
     log('👉类型: ' + objcObj.$className  + ' 值: ' + objcObj.toString());
   },
 

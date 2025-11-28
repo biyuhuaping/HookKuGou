@@ -8,12 +8,12 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`+[UserOpBLL getUserInfoFrompListFile:${args[2]}]`);
-    let objcObj = ObjC.Object(args[2]);
-    log('👉'+ objcObj.toString() + '（' + objcObj.$className + '）');
+    let objcObj = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj));
   },
 
   onLeave(log, retval, state) {
     const objcObj = new ObjC.Object(retval);
-    log('👈: ' + objcObj.toString() + '（' + objcObj.$className + '）' + '\n');
+    log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

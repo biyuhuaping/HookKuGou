@@ -8,8 +8,8 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`+[UICKeyChainStore stringForKey:${args[2]}]`);
-    let objcObj = ObjC.Object(args[2]);
-    log('👉'+ objcObj.toString() + '（' + objcObj.$className + '）');
+    let objcObj = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj));
   },
 
   onLeave(log, retval, state) {

@@ -8,7 +8,7 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[KGTencentStatistics deviceIDMachineName]`);
-    let objcObj = ObjC.Object(args[2]);
+    let objcObj = new ObjC.Object(args[2]);
     log('👉类型: ' + objcObj.$className  + ' 值: ' + objcObj.toString());
   },
 

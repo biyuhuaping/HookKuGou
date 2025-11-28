@@ -8,18 +8,18 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_fgcupvyp:${args[2]} oldQ36:${args[3]} newQ16:${args[4]} newQ36:${args[5]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    let objcObj2 = ObjC.Object(args[3]);
-    log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
-    let objcObj3 = ObjC.Object(args[4]);
-    log('👉'+ objcObj3.toString() + '（' + objcObj3.$className + '）');
-    let objcObj4 = ObjC.Object(args[5]);
-    log('👉'+ objcObj4.toString() + '（' + objcObj4.$className + '）');
+    let objcObj1 = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj1));
+    let objcObj2 = new ObjC.Object(args[3]);
+    log('👉 ' + formatObjCObject(objcObj2));
+    let objcObj3 = new ObjC.Object(args[4]);
+    log('👉 ' + formatObjCObject(objcObj3));
+    let objcObj4 = new ObjC.Object(args[5]);
+    log('👉 ' + formatObjCObject(objcObj4));
   },
 
   onLeave(log, retval, state) {
     let objcObj = new ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
+    log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

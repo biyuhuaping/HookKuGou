@@ -8,8 +8,8 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`+[ConfigProtocol getDeviceFingerprintID]`);
-    let objcObj = ObjC.Object(args[2]);
-    log('👉'+ objcObj.toString() + '（' + objcObj.$className + '）');
+    let objcObj = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj));
     //调用栈
     // log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },

@@ -8,9 +8,12 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[TDMQimeiServiceManager setQimeiServiceMap:${args[2]}]`);
+    const objcObj = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj));
   },
 
   onLeave(log, retval, state) {
-    log(`👈: ${retval}`);
+    const objcObj = new ObjC.Object(retval);
+    log('👈 ' + formatObjCObject(objcObj));
   }
 });

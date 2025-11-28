@@ -12,6 +12,6 @@ defineHandler({
 
   onLeave(log, retval, state) {
     const objcObj = new ObjC.Object(retval);
-    log(`👈: ${objcObj.$className + objcObj.toString()}`);
+    log('👈 ' + formatObjCObject(objcObj));
   }
 });

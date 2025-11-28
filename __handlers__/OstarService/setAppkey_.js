@@ -8,7 +8,7 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[OstarService setAppkey:${args[2]}]`);
-    let objcObj = ObjC.Object(args[2]);
+    let objcObj = new ObjC.Object(args[2]);
     log('👉类型: ' + objcObj.$className  + ' 值: ' + objcObj.toString());
     // log('调用栈: ' + Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },

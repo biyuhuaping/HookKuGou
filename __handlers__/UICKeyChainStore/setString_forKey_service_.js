@@ -8,16 +8,16 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`+[UICKeyChainStore setString:${args[2]} forKey:${args[3]} service:${args[4]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
+    let objcObj1 = new ObjC.Object(args[2]);
     const objcObj2 = new ObjC.Object(args[3]);
     const objcObj3 = new ObjC.Object(args[4]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
-    log('👉'+ objcObj3.toString() + '（' + objcObj3.$className + '）');
+    log('👉 ' + formatObjCObject(objcObj1));
+    log('👉 ' + formatObjCObject(objcObj2));
+    log('👉 ' + formatObjCObject(objcObj3));
   },
 
   onLeave(log, retval, state) {
     const objcObj = new ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
+    log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

@@ -13,7 +13,7 @@ defineHandler({
   },
 
   onLeave(log, retval, state) {
-    objcObj = new ObjC.Object(retval);
+    let objcObj = ObjC.Object(retval);
     log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
   }
 });

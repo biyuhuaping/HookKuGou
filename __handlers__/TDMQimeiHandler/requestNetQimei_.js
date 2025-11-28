@@ -8,9 +8,12 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[TDMQimeiHandler requestNetQimei:${args[2]}]`);
+    const objcObj = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj) + '\n');
   },
 
   onLeave(log, retval, state) {
-    log(`👈: ${retval}`);
+    const objcObj = new ObjC.Object(retval);
+    log('👈 ' + formatObjCObject(objcObj));
   }
 });

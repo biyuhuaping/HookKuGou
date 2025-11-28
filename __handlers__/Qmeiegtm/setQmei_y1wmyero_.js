@@ -10,12 +10,10 @@ defineHandler({
     log(`-[Qmeiegtm setQmei_y1wmyero:${args[2]}]`);
     let objcObj1 = ObjC.Object(args[2]);
     log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    let objcObj2 = ObjC.Object(args[3]);
-    log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
   },
 
   onLeave(log, retval, state) {
-    objcObj = new ObjC.Object(retval);
+    let objcObj = ObjC.Object(retval);
     log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
   }
 });

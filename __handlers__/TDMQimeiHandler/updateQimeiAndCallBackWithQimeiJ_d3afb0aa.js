@@ -8,9 +8,14 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[TDMQimeiHandler updateQimeiAndCallBackWithQimeiJson:${args[2]} serverCode:${args[3]}]`);
+    const objcObj1 = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj1));
+    const objcObj2 = new ObjC.Object(args[3]);
+    log('👉 ' + formatObjCObject(objcObj2));
   },
 
   onLeave(log, retval, state) {
-    log(`👈: ${retval}`);
+    const objcObj = new ObjC.Object(retval);
+    log('👈 ' + formatObjCObject(objcObj));
   }
 });

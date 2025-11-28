@@ -8,12 +8,12 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[OstarService setContent:${args[2]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
+    let objcObj1 = new ObjC.Object(args[2]);
     log('👉 ' + objcObj1.toString() + '（' + objcObj1.$className + '）');
   },
 
   onLeave(log, retval, state) {
-    let objcObj = ObjC.Object(retval);
+    let objcObj = new ObjC.Object(retval);
     log('👈 ' + objcObj.$className + ' ' + objcObj.toString() + '\n');
   }
 });

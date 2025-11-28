@@ -10,7 +10,7 @@ defineHandler({
     log(`-[Qmeiegtm qmei_wqtq9f]`);
     // if (!args[2].isNull()) {
     //   const objcObj1 = new ObjC.Object(args[2]);
-    //   log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
+    //   log('👉 ' + formatObjCObject(objcObj1));
     // } else {
     //   log('👉 arg0 is nil');
     // }
@@ -22,6 +22,6 @@ defineHandler({
     //   return;
     // }
     // const objcObj = new ObjC.Object(retval);
-    // log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
+    // log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

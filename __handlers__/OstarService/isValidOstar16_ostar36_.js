@@ -8,14 +8,14 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[OstarService isValidOstar16:${args[2]} ostar36:${args[3]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    let objcObj2 = ObjC.Object(args[3]);
-    log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
+    let objcObj1 = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj1));
+    let objcObj2 = new ObjC.Object(args[3]);
+    log('👉 ' + formatObjCObject(objcObj2));
   },
 
   onLeave(log, retval, state) {
-    let objcObj = ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
+    let objcObj = new ObjC.Object(retval);
+    log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

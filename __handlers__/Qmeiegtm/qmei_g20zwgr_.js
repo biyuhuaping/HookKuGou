@@ -9,11 +9,11 @@ defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_g20zwgr:${args[2]}]`);
     let objcObj1 = ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
+    log('👉 ' + formatObjCObject(objcObj1));
   },
 
   onLeave(log, retval, state) {
-    objcObj = new ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ objcObj.toString() + '\n');
+    let objcObj = new ObjC.Object(retval);
+    log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

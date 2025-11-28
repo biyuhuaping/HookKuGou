@@ -3,17 +3,20 @@
  * This stub is currently auto-generated from manpages when available.
  *
  * For full API reference, see: https://frida.re/docs/javascript-api/
+ * 
+ * 注意：formatObjCObject 函数通过 frida-trace -I Tools/format_objc.js 加载
+ * 使用方式：frida-trace -U -f com.kugou.kugou1002 -I Tools/format_objc.js -m "*[Qmeiegtm qmei_*]"
  */
 
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_zlrsj:${args[2]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
+    const objcObj1 = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj1));
   },
 
   onLeave(log, retval, state) {
-    // let objcObj = ObjC.Object(retval);
-    // log('👈: '+ objcObj.$className +" "+ objcObj.readUtf8String() + '\n');
+    const objcObj = new ObjC.Object(retval);
+    log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

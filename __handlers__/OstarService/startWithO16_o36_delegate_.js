@@ -8,12 +8,12 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[OstarService startWithO16:${args[2]} o36:${args[3]} delegate:${args[4]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
+    let objcObj1 = new ObjC.Object(args[2]);
     const objcObj2 = new ObjC.Object(args[3]);
     const objcObj3 = new ObjC.Object(args[4]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
-    log('👉'+ objcObj3.toString() + '（' + objcObj3.$className + '）');
+    log('👉 ' + formatObjCObject(objcObj1));
+    log('👉 ' + formatObjCObject(objcObj2));
+    log('👉 ' + formatObjCObject(objcObj3));
     //调用栈
     log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },

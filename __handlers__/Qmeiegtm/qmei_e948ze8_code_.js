@@ -8,16 +8,16 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_e948ze8:${args[2]} code:${args[3]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
-    let objcObj2 = ObjC.Object(args[3]);
-    log('👉'+ objcObj2.toString() + '（' + objcObj2.$className + '）');
-    log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
+    let objcObj1 = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj1));
+    let objcObj2 = new ObjC.Object(args[3]);
+    log('👉 ' + formatObjCObject(objcObj2));
+    // log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   },
 
   onLeave(log, retval, state) {
     log('👈: '+ retval.readUtf8String());
     let objcObj = new ObjC.Object(retval);
-    log('👈: '+ objcObj.$className +" "+ retval.readUtf8String() + '\n');
+    log('👈 ' + formatObjCObject(objcObj) + '\n');
   }
 });

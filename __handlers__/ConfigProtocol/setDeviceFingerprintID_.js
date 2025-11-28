@@ -8,8 +8,8 @@
 defineHandler({
   onEnter(log, args, state) {
     log(`+[ConfigProtocol setDeviceFingerprintID:${args[2]}]`);
-    let objcObj1 = ObjC.Object(args[2]);
-    log('👉'+ objcObj1.toString() + '（' + objcObj1.$className + '）');
+    let objcObj1 = new ObjC.Object(args[2]);
+    log('👉 ' + formatObjCObject(objcObj1));
   },
 
   onLeave(log, retval, state) {
