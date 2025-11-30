@@ -324,11 +324,163 @@
 }
 
 
+✅sub_10009F688
+_text:000000010009F688 ; =============== S U B R O U T I N E =======================================
+__text:000000010009F688
+__text:000000010009F688 ; Attributes: bp-based frame
+__text:000000010009F688
+__text:000000010009F688 sub_10009F688                ; CODE XREF: -[Qmeiegtm qmei_e948ze8:code:]+4C↑p
+__text:000000010009F688                              ; DATA XREF: __const:000000010F672778↓o
+__text:000000010009F688
+__text:000000010009F688 var_50          = -0x50
+__text:000000010009F688 var_4C          = -0x4C
+__text:000000010009F688 var_48          = -0x48
+__text:000000010009F688 var_44          = -0x44
+__text:000000010009F688 __p             = -0x40
+__text:000000010009F688 var_29          = -0x29
+__text:000000010009F688 var_28          = -0x28
+__text:000000010009F688 var_20          = -0x20
+__text:000000010009F688 var_18          = -0x18
+__text:000000010009F688 var_10          = -0x10
+__text:000000010009F688 var_8           = -8
+__text:000000010009F688 var_s0          =  0
+__text:000000010009F688 var_s8          =  8
+__text:000000010009F688
+__text:000000010009F688                 SUB             SP, SP, #0x60
+__text:000000010009F68C                 STP             X22, X21, [SP,#0x50+var_20]
+__text:000000010009F690                 STP             X20, X19, [SP,#0x50+var_10]
+__text:000000010009F694                 STP             X29, X30, [SP,#0x50+var_s0]
+__text:000000010009F698                 ADD             X29, SP, #0x50
+__text:000000010009F69C                 MOV             X20, X0
+__text:000000010009F6A0                 LDRB            W8, [X1,#0x17]
+__text:000000010009F6A4                 SXTB            W9, W8
+__text:000000010009F6A8                 LDR             X10, [X1,#8]
+__text:000000010009F6AC                 CMP             W9, #0
+__text:000000010009F6B0                 CSEL            X8, X10, X8, LT
+__text:000000010009F6B4                 STP             WZR, W8, [SP,#0x50+var_48]
+__text:000000010009F6B8                 ADD             X8, SP, #0x50+var_48
+__text:000000010009F6BC                 ADD             X0, X8, #8 ; this
+__text:000000010009F6C0                 BL              j___ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_ ; std::string::basic_string(std::string const&)
+__text:000000010009F6C4                 LDP             W8, W9, [SP,#0x50+var_48]
+__text:000000010009F6C8                 CMP             W8, W9
+__text:000000010009F6CC                 B.CS            loc_10009F768
+__text:000000010009F6D0                 ADD             X19, X20, #0x20 ; ' '
+__text:000000010009F6D4                 ADD             X20, X20, #8
+__text:000000010009F6D8                 MOV             W22, #0xF
+__text:000000010009F6DC
+__text:000000010009F6DC loc_10009F6DC                           ; CODE XREF: sub_10009F688+DC↓j
+__text:000000010009F6DC                 STR             XZR, [SP,#0x50+var_28]
+__text:000000010009F6E0                 ADD             X0, SP, #0x50+var_48
+__text:000000010009F6E4                 ADD             X1, SP, #0x50+var_28
+__text:000000010009F6E8                 BL              sub_10007B5A0
+__text:000000010009F6EC                 CMP             W0, #0x100
+__text:000000010009F6F0                 B.NE            loc_10009F770
+__text:000000010009F6F4                 LDR             X8, [SP,#0x50+var_28]
+__text:000000010009F6F8                 AND             X9, X8, #7
+__text:000000010009F6FC                 CMP             X9, #6
+__text:000000010009F700                 CSEL            W9, W9, W22, CC
+__text:000000010009F704                 LSR             X8, X8, #3
+__text:000000010009F708                 STP             W9, W8, [SP,#0x50+var_50]
+__text:000000010009F70C                 CMP             W8, #2
+__text:000000010009F710                 B.GE            loc_10009F734
+__text:000000010009F714                 CMP             W8, #1
+__text:000000010009F718                 B.NE            loc_10009F750
+__text:000000010009F71C                 ADD             X0, SP, #0x50+var_48
+__text:000000010009F720                 MOV             X1, X20
+__text:000000010009F724                 BL              sub_10007B45C
+__text:000000010009F728                 CMP             W0, #0x100
+__text:000000010009F72C                 B.EQ            loc_10009F75C
+__text:000000010009F730                 B               loc_10009F79C
+__text:000000010009F734 ; ---------------------------------------------------------------------------
+__text:000000010009F734
+__text:000000010009F734 loc_10009F734                           ; CODE XREF: sub_10009F688+88↑j
+__text:000000010009F734                 B.NE            loc_10009F750
+__text:000000010009F738                 ADD             X0, SP, #0x50+var_48
+__text:000000010009F73C                 MOV             X1, X19
+__text:000000010009F740                 BL              sub_10007B45C
+__text:000000010009F744                 CMP             W0, #0x100
+__text:000000010009F748                 B.EQ            loc_10009F75C
+__text:000000010009F74C                 B               loc_10009F7A4
+__text:000000010009F750 ; ---------------------------------------------------------------------------
+__text:000000010009F750
+__text:000000010009F750 loc_10009F750                           ; CODE XREF: sub_10009F688+90↑j
+__text:000000010009F750                                         ; sub_10009F688:loc_10009F734↑j
+__text:000000010009F750                 ADD             X0, SP, #0x50+var_48
+__text:000000010009F754                 MOV             X1, SP
+__text:000000010009F758                 BL              sub_10007B4EC
+__text:000000010009F75C
+__text:000000010009F75C loc_10009F75C                           ; CODE XREF: sub_10009F688+A4↑j
+__text:000000010009F75C                                         ; sub_10009F688+C0↑j
+__text:000000010009F75C                 LDP             W8, W9, [SP,#0x50+var_48]
+__text:000000010009F760                 CMP             W8, W9
+__text:000000010009F764                 B.CC            loc_10009F6DC
+__text:000000010009F768
+__text:000000010009F768 loc_10009F768                           ; CODE XREF: sub_10009F688+44↑j
+__text:000000010009F768                 MOV             W21, #0x100
+__text:000000010009F76C                 B               loc_10009F774
+__text:000000010009F770 ; ---------------------------------------------------------------------------
+__text:000000010009F770
+__text:000000010009F770 loc_10009F770                           ; CODE XREF: sub_10009F688+68↑j
+__text:000000010009F770                 MOV             X21, X0
+__text:000000010009F774
+__text:000000010009F774 loc_10009F774                           ; CODE XREF: sub_10009F688+E4↑j
+__text:000000010009F774                                         ; sub_10009F688+118↓j ...
+__text:000000010009F774                 LDRSB           W8, [SP,#0x50+var_29]
+__text:000000010009F778                 TBZ             W8, #0x1F, loc_10009F784
+__text:000000010009F77C                 LDR             X0, [SP,#0x50+__p] ; __p
+__text:000000010009F780                 BL              j___ZdlPv ; operator delete(void *)
+__text:000000010009F784
+__text:000000010009F784 loc_10009F784                           ; CODE XREF: sub_10009F688+F0↑j
+__text:000000010009F784                 MOV             X0, X21
+__text:000000010009F788                 LDP             X29, X30, [SP,#0x50+var_s0]
+__text:000000010009F78C                 LDP             X20, X19, [SP,#0x50+var_10]
+__text:000000010009F790                 LDP             X22, X21, [SP,#0x50+var_20]
+__text:000000010009F794                 ADD             SP, SP, #0x60 ; '`'
+__text:000000010009F798                 RET
+__text:000000010009F79C ; ---------------------------------------------------------------------------
+__text:000000010009F79C
+__text:000000010009F79C loc_10009F79C                           ; CODE XREF: sub_10009F688+A8↑j
+__text:000000010009F79C                 MOV             W21, #0x203
+__text:000000010009F7A0                 B               loc_10009F774
+__text:000000010009F7A4 ; ---------------------------------------------------------------------------
+__text:000000010009F7A4
+__text:000000010009F7A4 loc_10009F7A4                           ; CODE XREF: sub_10009F688+C4↑j
+__text:000000010009F7A4                 MOV             W21, #0x204
+__text:000000010009F7A8                 B               loc_10009F774
+__text:000000010009F7A8 ; End of function sub_10009F688
 
 
 
-
-
+✅-[Qmeiegtm qmei_qrlegk:serverCode:]
+// ObjC 方法签名（从反汇编得到）
+- (void)qmei_qrlegk:(id)payload serverCode:(signed long long)serverCode {
+    // X2 存的是 payload（id）
+    id copied = [HippyI18nUtils copy: payload];        // X19 = copied
+    // 调用 [copied length]
+    if ([copied length] == 0) {
+        // payload 为空/长度 0 的分支
+        [self qmei_rr8qkll: 0];                        // e.g. 清空/回调失败
+        [self qmei_x6ujqb: copied];                    // 传回原始 copied? (汇编中 X2=X21)
+    } else {
+        // 构造 QimeiContent *content = [[QimeiContent alloc] initWithQimeiJson:copied];
+        QimeiContent *content = [[QimeiContent alloc] initWithQimeiJson: copied];
+        // 调用 [self qmei_tc50i0_newQimei: content]  （注意第一个参数可能是 self 的某个字段 X20->0x18 作为第2参数）
+        [self qmei_tc50i0_newQimei: (idAtOffset18) newQimei: content];
+        // 再调用 [self qmei_ub5aadp7: content]
+        [self qmei_ub5aadp7: content];
+        // 持有一个 autoreleased return value，然后再调用 qmei_evkj6p0:（可能是另一路上报/回调，参数为上一步返回）
+        id tmp = objc_retainAutoreleasedReturnValue(); // X22
+        [self qmei_evkj6p0: tmp];
+        [tmp release];
+        // 调用 self.qimeiContent (属性访问?) -> 得到某 obj，然后调用 qmei_rr8qkll: with that obj
+        id tmp2 = [[self qimeiContent] autorelease? keep];
+        [self qmei_rr8qkll: tmp2];
+        [tmp2 release];
+        [content release];
+    }
+    // 最后返回 copied (X19) 并释放栈/寄存器
+    return copied;
+}
 
 
 

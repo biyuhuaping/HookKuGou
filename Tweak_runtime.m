@@ -25,13 +25,31 @@
 static NSDictionary *cachedConfig = nil;
 static NSDictionary *configDict(void) {
     if (cachedConfig) return cachedConfig;
-    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/.deviceFakeConfig.plist"];
-    cachedConfig = [NSDictionary dictionaryWithContentsOfFile:path][@"config"];
+    
+    // 尝试多个路径，按优先级顺序
+    NSArray *possiblePaths = @[
+        @"/var/jb/tmp/deviceFakeConfig.plist",  // 越狱设备（rootless）
+        @"/var/tmp/deviceFakeConfig.plist",     // 越狱设备（传统）
+        [NSHomeDirectory() stringByAppendingPathComponent:@"Library/deviceFakeConfig.plist"],  // 应用沙盒（未越狱）
+        [NSHomeDirectory() stringByAppendingPathComponent:@"Library/.deviceFakeConfig.plist"],  // 应用沙盒（未越狱）
+        [NSHomeDirectory() stringByAppendingPathComponent:@"tmp/deviceFakeConfig.plist"],    // 应用沙盒 tmp（未越狱）
+    ];
+    
+    NSString *loadedPath = nil;
+    for (NSString *path in possiblePaths) {
+        NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:path];
+        if (dict) {
+            cachedConfig = dict[@"config"];
+            loadedPath = path;
+            break;
+        }
+    }
+    
     if (!cachedConfig) {
-        NSLog(@"[HOOK] Failed to load config at %@", path);
+        NSLog(@"[HOOK]config: Failed from all paths: %@", possiblePaths);
         cachedConfig = @{};
     } else {
-        NSLog(@"[HOOK] Loaded config once at %@", path);
+        NSLog(@"[HOOK]config: Loaded from: %@", loadedPath);
     }
     return cachedConfig;
 }
@@ -275,7 +293,7 @@ static NSString *getOrigSysctlString(const char *name) {
     size_t size = 0;
     if (orig_sysctlbyname(name, NULL, &size, NULL, 0) != 0 || size == 0) return nil;
 
-    char *buf = malloc(size);
+    char *buf = (char *)malloc(size);
     if (!buf) return nil;
 
     if (orig_sysctlbyname(name, buf, &size, NULL, 0) != 0) {
@@ -372,7 +390,7 @@ static CFStringRef hook_CFNetworkCopySystemVersionString(void) {
     NSString *osv = config[@"osv"];
     if (osv.length) {
         NSLog(@"[hook] CFNetworkCopySystemVersionString 覆盖为 %@", osv);
-        return CFRetain((__bridge CFStringRef)osv);
+        return (CFStringRef)CFRetain((__bridge CFStringRef)osv);
     }
 
     return origValue;
@@ -397,7 +415,7 @@ static CFStringRef hook___CFUserAgentString(void) {
     if (osv.length) {
         NSString *fakeUA = [NSString stringWithFormat:@"Mozilla/5.0 (iPhone; CPU iPhone OS %@ like Mac OS X)", osv];
         NSLog(@"[hook] __CFUserAgentString 覆盖为 %@", fakeUA);
-        return CFRetain((__bridge CFStringRef)fakeUA);
+        return (CFStringRef)CFRetain((__bridge CFStringRef)fakeUA);
     }
     return origValue;
 }
@@ -532,7 +550,7 @@ static id hook_NSUserDefaults_objectForKey(id self, SEL _cmd, id key) {
         // 处理 Qimei（如果配置中有值，返回配置的值）
         if ([keyStr isEqualToString:@"kTencentStatic_Qimei"]) {
             NSDictionary *cfg = configDict();
-            NSString *newStr = cfg[@"kTencentStatic_Qimei"];
+            NSString *newStr = cfg[@"qimei"];
             if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
                 NSLog(@"[HOOK] NSUserDefaults objectForKey: %@ => %@ (override)", keyStr, newStr);
                 return newStr;
@@ -625,7 +643,7 @@ static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, i
         // kTencentStatic_Qimei
         if ([keyStr isEqualToString:@"kTencentStatic_Qimei"]) {
             NSDictionary *cfg = configDict();
-            NSString *newStr = cfg[@"kTencentStatic_Qimei"];
+            NSString *newStr = cfg[@"qimei"];
             // 只有当配置存在且不为空时才覆盖，否则保持原值
             if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
                 NSLog(@"[HOOK] NSUserDefaults %@ %@ -> %@", keyStr, object, newStr);
@@ -901,6 +919,136 @@ static void hook_all_qimei36_methods(void) {
             method_setImplementation(updateO16Method, (IMP)hook_QMBeaconHelper_updateO16_o36_reason_);
             NSLog(@"[HOOK] ✅[QMBeaconHelper]: +updateO16:o36:reason:");
         }
+    }
+}
+
+// ---------- Hook -[Qmeiegtm qmei_qrlegk:serverCode:] ----------
+// 注意：Objective-C 方法需要使用 method_setImplementation，fishhook 只能 Hook C 函数
+static void (*orig_Qmeiegtm_qmei_qrlegk_serverCode_)(id, SEL, id, id) = NULL;
+static void hook_Qmeiegtm_qmei_qrlegk_serverCode_(id self, SEL _cmd, id json, id serverCode) {
+    @autoreleasepool {
+        // 记录原始参数
+        NSString *originalJson = nil;
+        if ([json isKindOfClass:[NSString class]]) {
+            originalJson = (NSString *)json;
+            NSLog(@"[HOOK] -[Qmeiegtm qmei_qrlegk:serverCode:] 原始参数: json=%@, serverCode=%@", originalJson, serverCode);
+        } else {
+            NSLog(@"[HOOK] -[Qmeiegtm qmei_qrlegk:serverCode:] 原始参数: json=%@, serverCode=%@", json, serverCode);
+        }
+        
+        // 从配置读取需要替换的 q16 和 q36 值
+        // NSDictionary *cfg = configDict();
+        NSString *q36Value = @"11ca09173e0e2c6121e2f5a55354fa88888";//cfg[@"qimei"];
+        
+        // 如果配置中有值，修改 JSON 字符串
+        if (q36Value) {
+            if ([json isKindOfClass:[NSString class]]) {
+                NSString *jsonStr = (NSString *)json;
+                NSError *error = nil;
+                NSData *jsonData = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
+                NSMutableDictionary *jsonDict = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&error];
+                
+                if (!error && [jsonDict isKindOfClass:[NSMutableDictionary class]]) {
+                    // 修改 q16 和 q36
+                    if (q36Value) {
+                        jsonDict[@"q16"] = q36Value;
+                        jsonDict[@"q36"] = q36Value;
+                    }
+                    
+                    // 重新序列化为 JSON 字符串
+                    NSData *newJsonData = [NSJSONSerialization dataWithJSONObject:jsonDict options:0 error:&error];
+                    if (!error && newJsonData) {
+                        NSString *newJsonStr = [[NSString alloc] initWithData:newJsonData encoding:NSUTF8StringEncoding];
+                        json = newJsonStr;
+                        NSLog(@"[HOOK] -[Qmeiegtm qmei_qrlegk:serverCode:] 修改后: json=%@", newJsonStr);
+                    }
+                }
+            }
+        }
+        
+        // 调用原始方法
+        if (orig_Qmeiegtm_qmei_qrlegk_serverCode_) {
+            orig_Qmeiegtm_qmei_qrlegk_serverCode_(self, _cmd, json, serverCode);
+        }
+    }
+}
+
+// 安装 Hook -[Qmeiegtm qmei_qrlegk:serverCode:]
+static void hook_Qmeiegtm_qmei_qrlegk_serverCode_method(void) {
+    Class QmeiegtmClass = objc_getClass("Qmeiegtm");
+    if (QmeiegtmClass) {
+        SEL sel = sel_registerName("qmei_qrlegk:serverCode:");
+        Method m = class_getInstanceMethod(QmeiegtmClass, sel);
+        if (m) {
+            orig_Qmeiegtm_qmei_qrlegk_serverCode_ = (void (*)(id, SEL, id, id))method_getImplementation(m);
+            method_setImplementation(m, (IMP)hook_Qmeiegtm_qmei_qrlegk_serverCode_);
+            NSLog(@"[HOOK] ✅[Qmeiegtm]: -qmei_qrlegk:serverCode:");
+        } else {
+            NSLog(@"[HOOK] ❌[Qmeiegtm]: -qmei_qrlegk:serverCode: 方法未找到");
+        }
+    } else {
+        NSLog(@"[HOOK] ❌[Qmeiegtm]: 类未找到");
+    }
+}
+
+// ---------- Hook +[NSJSONSerialization dataWithJSONObject:options:error:] ----------
+// 注意：Objective-C 方法需要使用 method_setImplementation，fishhook 只能 Hook C 函数
+static NSData *(*orig_NSJSONSerialization_dataWithJSONObject_options_error_)(id, SEL, id, NSJSONWritingOptions, NSError **) = NULL;
+static NSData *hook_NSJSONSerialization_dataWithJSONObject_options_error_(id self, SEL _cmd, id obj, NSJSONWritingOptions opt, NSError **error) {
+    @autoreleasepool {
+        // 记录原始调用
+        if ([obj isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *dict = (NSDictionary *)obj;
+            NSLog(@"[HOOK]NSJSONSerialization: 入参: %@: %@", [obj class], dict);
+        } else if ([obj isKindOfClass:[NSArray class]]) {
+            NSArray *arr = (NSArray *)obj;
+            NSLog(@"[HOOK]NSJSONSerialization: 入参: %@: %@", [obj class], arr);
+        } else {
+            NSLog(@"[HOOK]NSJSONSerialization: 入参: %@", [obj class]);
+        }
+        
+        // 如果入参是字典，可以在这里修改内容
+        id modifiedObj = obj;
+        if ([obj isKindOfClass:[NSMutableDictionary class]]) {
+            // NSMutableDictionary *mutableDict = (NSMutableDictionary *)obj;
+            // 可以在这里修改字典内容
+            // 例如：mutableDict[@"key"] = @"value";
+        } else if ([obj isKindOfClass:[NSDictionary class]]) {
+            // 如果不是可变字典，创建可变副本
+            // NSMutableDictionary *mutableDict = [(NSDictionary *)obj mutableCopy];
+            // 可以在这里修改字典内容
+            // 例如：mutableDict[@"key"] = @"value";
+            // modifiedObj = mutableDict;
+        }
+        
+        // 调用原始方法
+        NSData *result = nil;
+        if (orig_NSJSONSerialization_dataWithJSONObject_options_error_) {
+            result = orig_NSJSONSerialization_dataWithJSONObject_options_error_(self, _cmd, modifiedObj, opt, error);
+        } else {
+            // 如果没有原始实现，使用系统方法（不应该发生）
+            result = [NSJSONSerialization dataWithJSONObject:modifiedObj options:opt error:error];
+        }
+        
+        return result;
+    }
+}
+
+// 安装 Hook +[NSJSONSerialization dataWithJSONObject:options:error:]
+static void hook_NSJSONSerialization_dataWithJSONObject_options_error_method(void) {
+    Class NSJSONSerializationClass = objc_getClass("NSJSONSerialization");
+    if (NSJSONSerializationClass) {
+        SEL sel = sel_registerName("dataWithJSONObject:options:error:");
+        Method m = class_getClassMethod(NSJSONSerializationClass, sel);
+        if (m) {
+            orig_NSJSONSerialization_dataWithJSONObject_options_error_ = (NSData *(*)(id, SEL, id, NSJSONWritingOptions, NSError **))method_getImplementation(m);
+            method_setImplementation(m, (IMP)hook_NSJSONSerialization_dataWithJSONObject_options_error_);
+            NSLog(@"[HOOK] ✅[NSJSONSerialization]: +dataWithJSONObject:options:error:");
+        } else {
+            NSLog(@"[HOOK] ❌[NSJSONSerialization]: +dataWithJSONObject:options:error: 方法未找到");
+        }
+    } else {
+        NSLog(@"[HOOK] ❌[NSJSONSerialization]: 类未找到");
     }
 }
 
@@ -1214,7 +1362,7 @@ static void swizzle_instance_method(Class cls, SEL sel, IMP newImp, IMP *origImp
     Method m = class_getInstanceMethod(cls, sel);
     if (m) {
         // 保存原 impl
-        *origImpStorage = (void *)method_getImplementation(m);
+        *origImpStorage = (IMP)method_getImplementation(m);
         // 设置新 impl
         method_setImplementation(m, newImp);
     } else {
@@ -1278,17 +1426,17 @@ static void init_hooks(void) {
 
         rbs[0].name = "sysctlbyname";
         rbs[0].replacement = (void *)hook_sysctlbyname;
-        rbs[0].replaced = (void *)&orig_sysctlbyname;
+        rbs[0].replaced = (void **)&orig_sysctlbyname;
 
         // CFNetworkCopySystemVersionString
         rbs[1].name = "CFNetworkCopySystemVersionString";
         rbs[1].replacement = (void *)hook_CFNetworkCopySystemVersionString;
-        rbs[1].replaced = (void *)&orig_CFNetworkCopySystemVersionString;
+        rbs[1].replaced = (void **)&orig_CFNetworkCopySystemVersionString;
 
         // __CFUserAgentString
         rbs[2].name = "__CFUserAgentString";
         rbs[2].replacement = (void *)hook___CFUserAgentString;
-        rbs[2].replaced = (void *)&orig___CFUserAgentString;
+        rbs[2].replaced = (void **)&orig___CFUserAgentString;
 
         rebind_symbols(rbs, 3);
 
@@ -1358,7 +1506,7 @@ static void init_hooks(void) {
         if (StatisticInfoClass) {
             Method m = class_getClassMethod(StatisticInfoClass, @selector(sysVer));
             if (m) {
-                orig_StatisticInfo_sysVer = (void *)method_getImplementation(m);
+                orig_StatisticInfo_sysVer = (id (*)(id, SEL))method_getImplementation(m);
                 method_setImplementation(m, (IMP)hook_StatisticInfo_sysVer);
                 NSLog(@"[HOOK] hooked +[StatisticInfo sysVer]");
             } else {
@@ -1374,7 +1522,7 @@ static void init_hooks(void) {
         }
         //主动调用一次hook_NSUserDefaults_setObject_forKey// kTencentStatic_Qimei
         NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        [defaults setObject:@"111" forKey:@"kTencentStatic_Qimei"];
+        [defaults setObject:@"111" forKey:@"qimei"];
         [defaults synchronize];
 
         // TMEWebUserAgent
@@ -1386,6 +1534,12 @@ static void init_hooks(void) {
 
         // hook_all_qimei36_methods qimei36 方法（立即尝试，如果失败则延迟重试）
         hook_all_qimei36_methods();
+
+        // Hook -[Qmeiegtm qmei_qrlegk:serverCode:]
+        hook_Qmeiegtm_qmei_qrlegk_serverCode_method();
+
+        // Hook +[NSJSONSerialization dataWithJSONObject:options:error:]
+        hook_NSJSONSerialization_dataWithJSONObject_options_error_method();
 
         NSLog(@"[HOOK] hooks installed");
         
