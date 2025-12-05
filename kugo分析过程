@@ -468,12 +468,139 @@ cleanUp:
 }
 
 
+#import <Foundation/Foundation.h>
+#import <string>
+
+// 前置声明
+int64_t sub_10009F688(char* dstBuf, std::string* srcStr);
+int64_t sub_10009F5F0(/* 异常参数 */);
+void sub_107C0A6B8(NSMutableDictionary* dict, NSString* key, NSString* value);
+void sub_107C0A6BC(int type, NSString* msg1, NSString* msg2);
+
+@interface Qmeiegtm : NSObject
+- (void)qmei_e948ze8:(std::string *)strPtr code:(int64_t)code;
+- (void)qmei_qrlegk:(NSString *)jsonStr serverCode:(NSInteger)code;
+- (NSString *)qmei_wqtq9f;
+@end
+
+@implementation Qmeiegtm
+
+- (void)qmei_e948ze8:(std::string *)strPtr code:(int64_t)code {
+    @try { // C++ 异常捕获（对应 sub_10009F5F0）
+        char buf[0x78] = {0};
+        NSMutableDictionary *dict = [[NSDictionary dictionary] mutableCopy];
+        
+        // 1. 核心调用：解析 C++ 字符串
+        int64_t parseStatus = sub_10009F688(buf, strPtr);
+        if (parseStatus != 0x100) {
+            NSLog(@"字符串解析失败：%llx", parseStatus);
+            [dict release];
+            return;
+        }
+
+        // 2. 构建 q16/q36 键值对（逻辑同之前还原）
+        NSString *q16Key = [NSString stringWithUTF8String:@"q16"];
+        char *q16ValueCStr = (buf[0x67] < 0) ? buf : buf+8;
+        NSString *q16Value = [NSString stringWithUTF8String:q16ValueCStr];
+        sub_107C0A6B8(dict, q16Key, q16Value);
+        [q16Value release];
+        [q16Key release];
+
+        NSString *q36Key = [NSString stringWithUTF8String:@"q36"];
+        char *q36ValueCStr = (buf[0x5F] < 0) ? (buf + 0x68) : (buf + 0x98);
+        NSString *q36Value = [NSString stringWithUTF8String:q36ValueCStr];
+        sub_107C0A6B8(dict, q36Key, q36Value);
+        [q36Value release];
+        [q36Key release];
+
+        // 3. JSON 序列化 + 数据上报（逻辑同之前还原）
+        BOOL needGenJSON = (buf[0x67] < 0 || buf[0x5F] < 0);
+        if (needGenJSON) {
+            NSError *error = nil;
+            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
+            NSString *jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+            [self qmei_qrlegk:jsonStr serverCode:0];
+            [jsonStr release];
+            [jsonData release];
+        } else {
+            [self qmei_qrlegk:nil serverCode:code];
+        }
+
+        // 4. 打印注册成功日志
+        NSString *logPrefix = [self qmei_wqtq9f];
+        NSString *logMsg = [NSString stringWithFormat:@"REGISTER success code: %ld, %@", code, logPrefix];
+        sub_107C0A6BC(1, logPrefix, logMsg);
+        [logMsg release];
+        [logPrefix release];
+
+        // 5. 内存清理
+        if (buf[0x67] < 0) delete buf;
+        if (buf[0x5F] < 0) delete (buf + 0x70);
+        [dict release];
+    } @catch (...) { // C++ 异常捕获 → 调用 sub_10009F5F0 清理
+        sub_10009F5F0(/* 异常上下文参数 */);
+    }
+}
+
+@end
 
 
+sub_107C0A6B8 内部只做了跳转到-> sub_10CC45708
 
+✅sub_10CC45708 完整还原（非 ARC 手动内存管理）
+void sub_10CC45708(NSMutableDictionary *dict, NSString *key, NSString *value) {
+    // ===================== 1. 栈帧初始化 + 参数保存 =====================
+    // 汇编：STP X22,X21 → STP X29,X30；ADD X29, SP, #0x20
+    // 寄存器映射：X19=dict, X20=key, X21=value
+    id retainedDict = nil;
+    id retainedKey = nil;
+    id retainedValue = nil;
 
+    // ===================== 2. 手动 Retain 参数（防止提前释放） =====================
+    // 汇编：MOV X0,X1 → BL _objc_retain；MOV X19,X0
+    retainedDict = [dict retain];      // X19 存储 retain 后的字典
+    retainedKey = [key retain];        // X20 存储 retain 后的 Key
+    retainedValue = [value retain];    // X21 存储 retain 后的 Value
 
+    // ===================== 3. 空值校验（Value/Key 为空则直接清理） =====================
+    // 汇编：CBZ X0, loc_10CC457A0；CBZ X20, loc_10CC457A0
+    if (!retainedValue || !retainedKey) {
+        goto cleanUp; // 跳转到内存释放逻辑
+    }
 
+    // ===================== 4. 类型校验：Value 必须是 NSString 类型 =====================
+    // 汇编：ADRP X8, classRef_NSString → BL _objc_msgSend(class) → 获取 NSString 类对象
+    Class NSStringClass = [NSString class];
+    // 汇编：MOV X0,X21 → BL _objc_msgSend(isKindOfClass:)
+    BOOL isNSString = [retainedValue isKindOfClass:NSStringClass];
+    if (!isNSString) {
+        goto cleanUp; // 非 NSString 类型则清理
+    }
+
+    // ===================== 5. 长度校验：Value 不能为空字符串（length > 0） =====================
+    // 汇编：MOV X0,X21 → BL _objc_msgSend(length)；CBZ X0, loc_10CC457A0
+    NSUInteger valueLength = [retainedValue length];
+    if (valueLength == 0) {
+        goto cleanUp; // 空字符串则清理
+    }
+
+    // ===================== 6. 校验通过：给字典添加键值对 =====================
+    // 汇编：ADRP X8, selRef_setObject_forKey_ → BL _objc_msgSend
+    [retainedDict setObject:retainedValue forKey:retainedKey];
+
+    // ===================== 7. 统一内存清理（Release 之前 Retain 的对象） =====================
+cleanUp:
+    // 汇编：MOV X0,X21 → BL _objc_release；MOV X0,X20 → BL _objc_release
+    [retainedValue release]; // 释放 Value
+    [retainedKey release];   // 释放 Key
+    
+    // 汇编：MOV X0,X19 → LDP 恢复寄存器 → B _objc_release
+    [retainedDict release];  // 释放字典（最后一步通过 B 指令跳转到 _objc_release，等价直接调用）
+    
+    // ===================== 8. 栈帧恢复 + 返回 =====================
+    // 汇编：LDP X29,X30 → LDP X20,X19 → LDP X22,X21；ADD SP, SP, #0x30
+    return;
+}
 
 
 
