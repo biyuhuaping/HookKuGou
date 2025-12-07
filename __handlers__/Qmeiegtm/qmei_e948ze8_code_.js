@@ -3,31 +3,37 @@
  * This stub is currently auto-generated from manpages when available.
  *
  * For full API reference, see: https://frida.re/docs/javascript-api/
+ *
+ * 注意：formatObjCObject 函数通过 frida-trace -I Tools/format_objc.js 加载
+ * 使用方式：frida-trace -U -f com.kugou.kugou1002 -m "*[Qmeiegtm qmei_e948ze8*]"
  */// 根据类型格式化输出 Objective-C 对象
- function dumpArg(arg) {
-  if (arg.isNull()) return "NULL";
+ 
+ function readStdString(strPtr) {
+  const bufPtr = strPtr;
+  const size = Memory.readU64(strPtr.add(0x10));
 
-  // 如果是可能的 Objective‑C 对象
-  try {
-      const obj = new ObjC.Object(arg);
-      return `[ObjC ${obj.$className}] ${obj.toString()}`;
-  } catch (e) {
-      // 不是 ObjC 对象，当作指针处理
-      return `[Ptr] ${arg} → ${hexdump(arg, { length: 32 })}`;
+  if (size <= 15) {
+      return Memory.readUtf8String(bufPtr, size);
+  } else {
+      const realPtr = Memory.readPointer(bufPtr);
+      return Memory.readUtf8String(realPtr, size);
   }
 }
 
 defineHandler({
   onEnter(log, args, state) {
     log(`-[Qmeiegtm qmei_e948ze8:${args[2]} code:${args[3]}]`);
+    log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join("\n"));
 
-    log(`👉 arg0: ${args[0].$className}`);
-    log(`👉 arg1: ${args[1].$className}`);
-    log(`👉 arg2: ${hexdump(args[2])}`);
-    log(`👉 arg3: ${hexdump(args[3])}`);
+    const s1 = readStdString(args[2]);
+    const s2 = readStdString(args[3]);
+
+    log(`👉 arg2: ${s1}`);
+    log(`👉 arg3: ${args[3].toInt32()}`);
+    log(`👉 arg3: ${s2}`);
   },
 
   onLeave(log, retval, state) {
-    log(`👈 retval: ${hexdump(retval)}`);
+    // log(`👈 retval: ${hexdump(retval)}`);
   }
 });
