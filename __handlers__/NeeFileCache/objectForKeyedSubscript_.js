@@ -13,7 +13,10 @@ defineHandler({
   },
 
   onLeave(log, retval, state) {
-    const objcObj = new ObjC.Object(retval);
-    log(`NeeFileCache key: ${this.objcObj.toString()} value: ${objcObj.toString()}`);
+    if (this.objcObj.toString().includes('appUdid')){
+      const objcObj = new ObjC.Object(retval);
+      log(`NeeFileCache key: ${this.objcObj.toString()} value: ${objcObj.toString()}`);
+      log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
+    }
   }
 });

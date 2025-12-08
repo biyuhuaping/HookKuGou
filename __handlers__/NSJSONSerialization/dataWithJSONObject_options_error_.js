@@ -4,6 +4,7 @@
  *
  * For full API reference, see: https://frida.re/docs/javascript-api/
  */
+//使用方法 frida-trace -U -f com.kugou.kugou1002 -m "+[NSJSONSerialization dataWithJSONObject:options:error:]"
 
 defineHandler({
   onEnter(log, args, state) {

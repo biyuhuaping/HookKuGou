@@ -16,15 +16,11 @@
 // 汇编中，调用 sub_10009F6CC 函数，填充 QMStruct 结构体
 // 「解码服务器下发的某种自定义二进制消息」的 OC 封装层。
 - (NSDictionary *)qmei_e948ze8:(NSString *)arg1 code:(NSString *)arg2 {
-
-    // --- 1.　本地结构体 ---
     QMStruct p = {0};
 
     // --- 2.　初始化结构体：sub_10009F6CC(&p) ---
     // 这个函数通常是：解析字符串，做 hash，填充随机数或生成 token
     sub_10009F6CC(&p);
-
-    // --- 3.　创建一个可变字典（从空字典复制）---
     NSMutableDictionary *dict = [@{} mutableCopy];
 
     // ============ 第一部分：key = @"q16" ============
@@ -35,7 +31,6 @@
 
     // 选择 value：负数则取结构体 A，不是负数则取结构体 B
     NSString *valueQ16 = nil;
-
     if (negative) {
         // X24 —> 指向 struct_A 的字符串地址
         valueQ16 = (NSString *)struct_A_string;    // 实际是一个指针，后面可补全
@@ -43,7 +38,6 @@
         // X9 —> 指向 struct_B 的字符串地址
         valueQ16 = (NSString *)struct_B_string;
     }
-
     // 放入字典
     sub_107C0A718(dict, keyQ16, valueQ16);
     // 或等价于：dict[keyQ16] = valueQ16;
@@ -57,20 +51,83 @@
     BOOL condition2 = (extract_from_p(p) < 0);
     // 上面 extract_from_p(p) 是占位，我需要你发 sub_10009F6CC 就能确认具体字段
 
-    NSString *valueQ36 = condition2 ? (NSString *)struct_C_string
-                                    : (NSString *)struct_D_string;
+    NSString *valueQ36 = condition2 ? (NSString *)struct_C_string : (NSString *)struct_D_string;
 
     sub_107C0A718(dict, keyQ36, valueQ36);
     // 或：dict[keyQ36] = valueQ36;
-
 
     // ============ 函数返回 ============
     // 汇编里是 autoreleaseReturnValue
     return [dict copy];
 }
 
+- (void)qmei_e948ze8:(id)arg1 code:(NSInteger)code {
+    NSMutableDictionary *dict = [@{} mutableCopy];
+
+    struct SomeStruct buffer;
+    memset(&buffer, 0, sizeof(buffer));
+    sub_10009F6CC(&buffer);
+
+    NSString *key = [NSString stringWithUTF8String:"q16"];
+    NSString *val = (someFlag < 0) ? option1 : option2;
+
+    sub_107C0A718(dict, key, val);
+
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dict options:0 error:nil];
+    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+    [self qmei_qrlegk:jsonString serverCode:0];
+    self.someResult = [self qmei_wqtq9f:...];
+
+    NSString *logStr = [NSString stringWithFormat:@"REGISTER success code: %ld, %@", 1, self.someResult];
+    sub_107C0A71C(1, self.someResult, logStr);
+
+    [self qmei_qrlegk:nil serverCode:code];
+}
+
+
+- (id)qmei_qrlegk:(id)arg0 serverCode:(id)arg1 {
+    // 保存输入参数
+    id selfObj = arg0;
+    id serverCode = arg1;
+    
+    // 先拷贝一份输入（可能是 JSON 数据）
+    id copiedJson = [HippyI18nUtils copy:serverCode];
+    
+    // 如果 copiedJson 非空
+    if ([copiedJson length] > 0) {
+        // 创建 QimeiContent 对象，并用 copiedJson 初始化
+        QimeiContent *content = [[QimeiContent alloc] initWithQimeiJson:copiedJson];
+        
+        // 调用 selfObj.qmei_tc50i0_newQimei:content
+        [selfObj qmei_tc50i0_newQimei:content];
+        
+        // 调用 selfObj.qmei_ub5aadp7:content
+        id retainedContent = [[selfObj qmei_ub5aadp7:content] retain]; // objc_retainAutoreleasedReturnValue
+        [selfObj qmei_evkj6p0:retainedContent];
+        
+        // 调用 selfObj.qmeiContent
+        id anotherContent = [[selfObj qmeiContent] retain];
+        [selfObj qmei_rr8qkll:anotherContent];
+    } else {
+        // copiedJson 为空时的处理
+        [selfObj qmei_rr8qkll:nil];
+        [selfObj qmei_x6ujqb:serverCode];
+    }
+    
+    return copiedJson;
+}
+
+
+
+
+
+
+
+
+//sub_107C0A71C
 void sub_107C0A718(NSMutableDictionary *dict, id key, id value) {
-    sub_10CD14758(dict, key, value);
+    sub_10CD14758(dict, key, value);//sub_10CD14838
 }
 // 假设函数签名如下（根据寄存器 X0/X1/X2 的使用推测）
 void sub_10CD14758(NSMutableDictionary *dict, id key, id value) {
