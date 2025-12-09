@@ -7,9 +7,26 @@
 
 defineHandler({
   onEnter(log, args, state) {
-    log(`-[KGTencentStatistics q36]`);
+    // log(`-[KGTencentStatistics q36]`);
   },
 
   onLeave(log, retval, state) {
+    const objcObj = new ObjC.Object(retval);
+    // log(`-[KGTencentStatistics q36] retval: ${objcObj.toString()}`);
+
+    // 获取原始返回值
+    // if (!retval.isNull()) {
+    //   const objcObj = new ObjC.Object(retval);
+    //   log(`👈 [KGTencentStatistics q36] 原始返回值: ${objcObj.toString()} (${objcObj.$className})`);
+    // } else {
+    //   log(`👈 [KGTencentStatistics q36] 原始返回值: nil`);
+    // }
+    
+    // 修改返回值
+    const newValue = "1482ec024f1effab71edd705000016319900";
+    const newString = ObjC.classes.NSString.stringWithString_(newValue);
+    retval.replace(ptr(newString));
+    
+    log(`✅ -[KGTencentStatistics q36] ${objcObj.toString()} -> ${newValue}\n`);
   }
 });

@@ -37,11 +37,11 @@ defineHandler({
         }
         str += hextemp;
     }
-    log(`CC_MD5：${this.args0.readUtf8String()}`);  
-    log(`CC_MD5：${str}`);
     
     // 只在包含 q36 时才打印堆栈
     if (this.shouldLogBacktrace && this.backtrace) {
+      log(`CC_MD5：${this.args0.readUtf8String()}`);  
+      log(`CC_MD5：${str}`);
       log(this.backtrace);
     }
   }
