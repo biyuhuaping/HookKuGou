@@ -4,7 +4,7 @@
  *
  * For full API reference, see: https://frida.re/docs/javascript-api/
  */
-
+// frida-trace -U -f com.kugou.kugou1002 -m "-[KGTencentStatistics q36]" -i "CC_MD5"
 defineHandler({
   onEnter(log, args, state) {
     // log(`-[KGTencentStatistics q36]`);

@@ -800,24 +800,6 @@ static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, i
 // }
 
 
-// +[QMBeaconHelper updateO16:o36:reason:]
-static void (*orig_QMBeaconHelper_updateO16_o36_reason_)(id, SEL, id, id, id) = NULL;
-static void hook_QMBeaconHelper_updateO16_o36_reason_(id self, SEL _cmd, id o16, id o36, id reason) {
-    NSDictionary *cfg = configDict();
-    NSString *qimei = cfg[@"q36"];
-    NSLog(@"[HOOK] [QMBeaconHelper] Called: +updateO16:o36:reason: 原值：| o16: %@ | o36: %@ | reason: %@", 
-          o16, o36, reason);
-    if (qimei.length > 0) {
-        o16 = qimei;
-        o36 = qimei;
-    }
-    NSLog(@"[HOOK] [QMBeaconHelper] Called: +updateO16:o36:reason: 新值：| o16: %@ | o36: %@ | reason: %@", 
-          o16, o36, reason);
-    if (orig_QMBeaconHelper_updateO16_o36_reason_) {
-        orig_QMBeaconHelper_updateO16_o36_reason_(self, _cmd, o16, o36, reason);
-    }
-}
-
 
 // ---------- Hook +[NSJSONSerialization dataWithJSONObject:options:error:] ----------
 // 注意：Objective-C 方法需要使用 method_setImplementation，fishhook 只能 Hook C 函数

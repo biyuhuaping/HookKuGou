@@ -125,8 +125,55 @@
     [ostar startWithO16:o16 o36:o36 delegate:self];
 }
 
+- (NSString *)q36 {
+    NSString *q36Value = nil;
+    
+    // ===== 阶段1：优先读取缓存的 q36 值 =====
+    q36Value = [self tcQ36];
+    if (q36Value) {
+        // 校验缓存值有效性（非空且长度>0）
+        NSString *cachedQ36 = [self tcQ36];
+        if (cachedQ36.length > 0) {
+            return cachedQ36;
+        }
+    }
+    
+    // ===== 阶段2：缓存无效 → 从设备信息中解析 o36 作为兜底 =====
+    // 2.1 获取设备ID/机器名并解码 JSON
+    NSString *deviceID = [self deviceIDMachineName];
+    id decodedDeviceInfo = [deviceID jsonValueDecoded];
+    
+    // 2.2 从解码结果中读取 o36 字段（安全取值）
+    NSString *o36Value = [decodedDeviceInfo stringForKeyKGSafe:@"o36"];
+    
+    // 2.3 更新缓存的 q36 值
+    [self setTcQ36:o36Value];
+    
+    // 2.4 重新读取缓存的 q36 值
+    q36Value = [self tcQ36];
+    
+    // ===== 阶段3：缓存仍无效 → 异常补偿逻辑 =====
+    if (!q36Value) {
+        // 3.1 检查是否正在拉取 q36
+        if ([self isFecthingQ36]) {
+            // 3.2 检查是否允许高频发送
+            if ([self checkIfCanHigherFrequencySend]) {
+                // 3.3 高频发送允许 → 用 QIMEI 兜底
+                q36Value = [self getQimei];
+            } else {
+                // 3.4 高频发送不允许 → 重新读取缓存
+                q36Value = [self tcQ36];
+            }
+        } else {
+            // 3.5 未在拉取 → 直接重新读取缓存
+            q36Value = [self tcQ36];
+        }
+    }
+    
+    // ===== 最终返回 q36 值 =====
+    return q36Value;
+}
 
-✅-[KGTencentStatistics deviceIDMachineName]
 NSString *deviceIDMachineName() {
     //1、先从keychain 读取 kTencentStatic_Qimei
     NSString *keychainQimei = [UICKeyChainStore stringForKey:@"kTencentStatic_Qimei"];
@@ -165,4 +212,38 @@ NSString *deviceIDMachineName() {
     NSUserDefaults *def = [NSUserDefaults standardUserDefaults];
     [def setObjectKGSafe:value forKey:@"kTencentStatic_Qimei"];
     [def synchronize];
+}
+
+//强制重新刷新设备相关 ID
+✅-[KGTencentStatistics forceRereshDeviceIDMachineName:o36:]
+- (void)forceRereshDeviceIDMachineName:(id)o16 o36:(id)o36 {
+    // X2 -> o16
+    id obj16 = o16;
+    // X3 -> o36
+    id obj36 = o36;
+
+    // 建一个字典
+    NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:1];
+
+    // 保存字段 "o16" : obj16
+    [dict setObjectKGSafe:obj16 forKey:@"o16"];
+
+    // 保存字段 "o36" : obj36
+    [dict setObjectKGSafe:obj36 forKey:@"o36"];
+
+    // 把 o36 设置到对象属性里（内存中缓存）
+    [self setTcQ36:obj36];
+
+    // 转成 JSON 字符串
+    NSString *json = [dict JSONString2];
+
+    // 若 JSON 不为空
+    if (json && json.length > 0) {
+
+        // 存入 NSUserDefaults （“服务器生成设备大ID”）
+        [self setTencentAutoTrackSeverGenUdidBigNumber:json];
+
+        // 再写入 Keychain（持久化）
+        [UICKeyChainStore setString:json forKey:@"kTencentStatic_Qimei"];
+    }
 }
