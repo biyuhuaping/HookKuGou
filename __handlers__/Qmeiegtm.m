@@ -129,29 +129,20 @@
 void sub_107C0A718(NSMutableDictionary *dict, id key, id value) {
     sub_10CD14758(dict, key, value);//sub_10CD14838
 }
-// 假设函数签名如下（根据寄存器 X0/X1/X2 的使用推测）
+// 安全写入字典
 void sub_10CD14758(NSMutableDictionary *dict, id key, id value) {
-    id localDict = dict;   // X19
-    id localKey  = key;    // X20
-    id localValue = value; // X21
-
-    // -------- 参数保留与空判断 --------
-    if (!localValue || !localKey) {
+    if (!value || !key) {
         return;
     }
 
     // -------- 判断 value 是否是 NSString 且 length > 0 --------
-    if ([localValue isKindOfClass:[NSString class]]) {
-        if ([(NSString *)localValue length] == 0) {
+    if ([value isKindOfClass:[NSString class]]) {
+        if ([(NSString *)value length] == 0) {
             // 字符串为空 -> 不写入
             return;
         }
     }
-
-    // -------- 执行 setObject:forKey: --------
-    [localDict setObject:localValue forKey:localKey];
-
-    // ARC 下无需手动释放，反汇编里是编译器生成的 retain/release
+    [dict setObject:value forKey:key];
 }
 
 // 参数：arg (std::string-like) , code (int)

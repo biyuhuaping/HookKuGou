@@ -354,11 +354,13 @@ static int setSysctlOverride(const char *name, NSString *orig, NSString *overrid
 static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, const void *newp, size_t newlen) {
     NSDictionary *config = configDict();
     // NSString *key = [NSString stringWithUTF8String:name];
+    NSLog(@"sysctlbyname - %s oldp: %s, oldlenp: %ld, newp: %s, newlen: %ld", name, (const char *)oldp, *oldlenp, (const char *)newp, newlen);
 
     // hw.machine
     if (strcmp(name, "hw.machine") == 0) {
         NSString *orig = getOrigSysctlString(name);
         NSString *override = config[@"dModel"];//iPhone13,4
+        NSLog(@"sysctlbyname %s %@ -> %@",name, orig, override);
         if (override.length)
             return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
@@ -377,6 +379,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     if (strcmp(name, "kern.osproductversion") == 0) {
         NSString *orig = getOrigSysctlString(name);
         NSString *override = config[@"osv"];//17.6.1
+        NSLog(@"sysctlbyname %s %@ -> %@",name, orig, override);
         if (override.length)
             return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
@@ -386,6 +389,7 @@ static int hook_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, cons
     if (strcmp(name, "kern.osversion") == 0) {
         NSString *orig = getOrigSysctlString(name);
         NSString *override = config[@"osb"];//20B101
+        NSLog(@"sysctlbyname %s %@ -> %@",name, orig, override);
         if (override.length)
             return setSysctlOverride(name, orig, override, oldp, oldlenp);
         return orig_sysctlbyname(name, oldp, oldlenp, newp, newlen);
@@ -577,8 +581,8 @@ static id hook_NSUserDefaults_objectForKey(id self, SEL _cmd, id key) {
             NSDictionary *cfg = configDict();
             NSString *newStr = cfg[@"q36"];
             if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
-                NSLog(@"[HOOK] NSUserDefaults objectForKey: %@ => %@ (override)", keyStr, newStr);
-                return newStr;
+                NSLog(@"[HOOK] NSUserDefaults objectForKey: %@: %@ -> %@", keyStr, origValue, newStr);
+                origValue = newStr;
             }
             // 配置不存在或为空，返回原始值
             return origValue;
@@ -607,8 +611,8 @@ static id hook_NSUserDefaults_objectForKey(id self, SEL _cmd, id key) {
                 }
             }
             
+            NSLog(@"[HOOK] NSUserDefaults objectForKey: saveAgent: %@ -> %@",origValue, agentDict);
             if (changed) {
-                NSLog(@"[HOOK] NSUserDefaults objectForKey: saveAgent => replaced");
                 return [agentDict copy];
             }
             return origValue;
@@ -626,7 +630,7 @@ static id hook_NSUserDefaults_objectForKey(id self, SEL _cmd, id key) {
                 NSString *newVer = [osv stringByReplacingOccurrencesOfString:@"." withString:@"_"];
                 NSString *newValue = replaceiPhoneOSVersion(origValue, newVer);
                 if (newValue != origValue) {
-                    NSLog(@"[HOOK] NSUserDefaults objectForKey: %@ => replaced", keyStr);
+                    NSLog(@"[HOOK] NSUserDefaults objectForKey: %@: %@-> %@", keyStr, origValue, newValue);
                     return newValue;
                 }
             }

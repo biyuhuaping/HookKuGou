@@ -1,0 +1,18 @@
+👉 NSData -> JSON 出参:{
+    q16 = fae0c6104adffedfd37614e500001de19917;
+    q36 = fae0c6104adffedfd37614e500001de19917;
+}
+0x11bf4a530 KGSafeKit!+[NSJSONSerialization JSONObjectWithData:options:error:]
+0x1118e04e4 kugou!-[TDMQimeiContent initWithQimeiJson:]
+0x1118e64b8 kugou!-[TDMQimeiHandler qimeiContent]
+0x1118e09e4 kugou!-[TDMQimeiService getQimei]
+0x11d58c644 TDataMaster!-[TDeviceInfoUtil GetQIMEI:]
+0x11d5c7c88 TDataMaster!TDM::TDeviceInfoCollect::GetQIMEI()
+0x11d581f4c TDataMaster!TDM::TDeviceInfoHolder::CollectStringDeviceInfo(tdm_tp_stl_c::tdm_string const&, TDM::DeviceInfo<tdm_tp_stl_c::tdm_string>*)
+0x11d5821f4 TDataMaster!TDM::TDeviceInfoHolder::CollectAllDeviceInfoFromSystem()
+0x11d5815f4 TDataMaster!TDM::TDeviceInfoHolder::GetStringDeviceInfo(char const*, TDM::DeviceInfo<tdm_tp_stl_c::tdm_string>*)
+0x11d585ce4 TDataMaster!TDM::TDeviceInfoHolder::IsAsyncDeviceCollectComplete()
+0x11d593e94 TDataMaster!TDM::TDMEventQueue::SwapEventToReportQueue()
+0x11d5a3d74 TDataMaster!TDM::TDataMasterReporter::ProcessSingleThread(void*)
+0x11d5a34d0 TDataMaster!TDM::TDataMasterReporter::ProcessThread(void*)
+0x20b080060 libsystem_pthread.dylib!_pthread_start
