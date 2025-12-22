@@ -144,10 +144,10 @@ static NSUUID *hook_UIDevice_identifierForVendor(id self, SEL _cmd) {
     NSString *customIDFV = config[@"idfv"];
     if (customIDFV.length) {
         NSUUID *u = [[NSUUID alloc] initWithUUIDString:customIDFV];
-        NSLog(@"[HOOK] idfv override: %@", u.UUIDString);
+        NSLog(@"[HOOK] idfv %@ -> %@",orig.UUIDString, u.UUIDString);
         return u;
     }
-    NSLog(@"[HOOK] idfv original: %@", orig.UUIDString);
+    NSLog(@"[HOOK] idfv 原值没改: %@", orig.UUIDString);
     return orig;
 }
 
@@ -299,6 +299,30 @@ static id hook_TDeviceInfoUtil_GetQIMEI_(id self, SEL _cmd, id arg1) {
             return qimeiValue;
         } else {
             NSLog(@"[HOOK] GetQIMEI: 返回原始值 = %@", origValue);
+            return origValue;
+        }
+    }
+}
+
+// ---------- ZBHObjectFloatContent uid ----------
+static id (*orig_ZBHObjectFloatContent_uid)(id, SEL) = NULL;
+static id hook_ZBHObjectFloatContent_uid(id self, SEL _cmd) {
+    @autoreleasepool {
+        // 获取原始返回值
+        id origValue = nil;
+        if (orig_ZBHObjectFloatContent_uid) {
+            origValue = orig_ZBHObjectFloatContent_uid(self, _cmd);
+        }
+        
+        // 从配置读取是否需要替换
+        NSDictionary *cfg = configDict();
+        NSString *uidValue = cfg[@"q36"];
+        // 如果配置中有值，使用配置的值；否则使用原始值
+        if (uidValue && [uidValue isKindOfClass:[NSString class]] && uidValue.length > 0) {
+            NSLog(@"[HOOK] -[ZBHObjectFloatContent uid]: %@ -> %@", origValue, uidValue);
+            return uidValue;
+        } else {
+            NSLog(@"[HOOK] -[ZBHObjectFloatContent uid]: 返回原始值");
             return origValue;
         }
     }
@@ -1127,6 +1151,22 @@ static void init_hooks(void) {
             }
         } else {
             NSLog(@"[HOOK] ❌ TDeviceInfoUtil class not found");
+        }
+
+        // ZBHObjectFloatContent -uid
+        Class ZBHObjectFloatContentClass = objc_getClass("ZBHObjectFloatContent");
+        if (ZBHObjectFloatContentClass) {
+            SEL sel = sel_registerName("uid");
+            Method m = class_getInstanceMethod(ZBHObjectFloatContentClass, sel);
+            if (m) {
+                orig_ZBHObjectFloatContent_uid = (id (*)(id, SEL))method_getImplementation(m);
+                method_setImplementation(m, (IMP)hook_ZBHObjectFloatContent_uid);
+                NSLog(@"[HOOK] ✅ hooked -[ZBHObjectFloatContent uid]");
+            } else {
+                NSLog(@"[HOOK] ❌ -[ZBHObjectFloatContent uid] method not found");
+            }
+        } else {
+            NSLog(@"[HOOK] ❌ ZBHObjectFloatContent class not found");
         }
 
         // NSUserDefaults

@@ -8,10 +8,16 @@
 
 defineHandler({
   onEnter(log, args, state) {
-    log(`+[NSJSONSerialization dataWithJSONObject:${args[2]} options:${args[3]} error:${args[4]}]`);
-    log("👉 JSON -> NSData 入参:" + ObjC.Object(args[2]));
-    log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
-    log('------------------------------------------------------------------------------------------------');
+    // log(`+[NSJSONSerialization dataWithJSONObject:${args[2]} options:${args[3]} error:${args[4]}]`);
+    // log("👉 JSON -> NSData 入参:" + ObjC.Object(args[2]));
+
+    const dic = ObjC.Object(args[2]);
+    log(dic.$className);
+    const key = ObjC.classes.NSString.stringWithString_("dev");
+    if (dic.objectForKey_(key) !== null) {
+      log("👉 JSON -> NSData 入参" + dic);
+      log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
+    }
   },
 
   onLeave(log, retval, state) {
