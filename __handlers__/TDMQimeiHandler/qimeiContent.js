@@ -76,12 +76,10 @@ function formatObjCObject(objcObj) {
 defineHandler({
   onEnter(log, args, state) {
     log(`-[TDMQimeiHandler qimeiContent]`);
-    const objcObj = new ObjC.Object(args[2]);
-    log('👉 ' + formatObjCObject(objcObj) + '\n');
   },
 
   onLeave(log, retval, state) {
     const objcObj = new ObjC.Object(retval);
-    log('👈 ' + formatObjCObject(objcObj));
+    log('👈 ' + objcObj.toString());
   }
 });

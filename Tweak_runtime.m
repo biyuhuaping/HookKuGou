@@ -128,7 +128,7 @@ static NSString *hook_UIDevice_name(id self, SEL _cmd) {
     NSString *name = config[@"dName"];
 
     if (name.length) {
-        NSLog(@"[HOOK] UIDevice.name original: %@ => %@", origValue, name);
+        NSLog(@"[HOOK] UIDevice.name original: %@ -> %@", origValue, name);
         return name;
     } else {
         NSLog(@"[HOOK] UIDevice.name original : %@", origValue);
@@ -163,7 +163,7 @@ static NSString *hook_UIDevice_systemVersion(id self, SEL _cmd) {
     NSString *sVersion = config[@"osv"];
 
     if (sVersion.length) {
-        NSLog(@"[HOOK] UIDevice.systemVersion original: %@ => %@", origValue, sVersion);
+        NSLog(@"[HOOK] UIDevice.systemVersion original: %@ -> %@", origValue, sVersion);
         return sVersion;
     } else {
         NSLog(@"[HOOK] UIDevice.systemVersion original : %@", origValue);
@@ -277,6 +277,33 @@ static NSString *hook_KGTencentStatistics_q36(id self, SEL _cmd) {
     }
 }
 
+// ---------- TDeviceInfoUtil GetQIMEI: ----------
+static id (*orig_TDeviceInfoUtil_GetQIMEI_)(id, SEL, id) = NULL;
+static id hook_TDeviceInfoUtil_GetQIMEI_(id self, SEL _cmd, id arg1) {
+    @autoreleasepool {
+        // 打印入参
+        NSLog(@"[HOOK] GetQIMEI: 入参 = %@", arg1);
+
+        // 获取原始返回值
+        id origValue = nil;
+        if (orig_TDeviceInfoUtil_GetQIMEI_) {
+            origValue = orig_TDeviceInfoUtil_GetQIMEI_(self, _cmd, arg1);
+        }
+        // 从配置读取是否需要替换
+        NSDictionary *cfg = configDict();
+        NSString *qimeiValue = cfg[@"q36"];//8P 16.1.1：fae0c6104adffedfd37614e500001de19917
+        
+        // 如果配置中有值，使用配置的值；否则使用原始值
+        if (qimeiValue && [qimeiValue isKindOfClass:[NSString class]] && qimeiValue.length > 0) {
+            NSLog(@"[HOOK] GetQIMEI: 返回值 %@ -> %@", origValue, qimeiValue);
+            return qimeiValue;
+        } else {
+            NSLog(@"[HOOK] GetQIMEI: 返回原始值 = %@", origValue);
+            return origValue;
+        }
+    }
+}
+
 
 // ---------- NSURLRequest allHTTPHeaderFields ----------
 static NSDictionary *(*orig_NSURLRequest_allHTTPHeaderFields)(id, SEL) = NULL;
@@ -346,7 +373,7 @@ static int setSysctlOverride(const char *name, NSString *orig, NSString *overrid
             *oldlenp = need;
         }
     }
-    NSLog(@"[hook] %s ：%@ => %s", name, orig, fake);
+    NSLog(@"[hook] %s ：%@ -> %s", name, orig, fake);
     return 0;
 }
 
@@ -466,25 +493,25 @@ static NSOperatingSystemVersion (*orig_NSProcessInfo_operatingSystemVersion)(id,
 // --- replacements ---
 static id hook_NSProcessInfo_processInfo(id self, SEL _cmd) {
     id obj = orig_NSProcessInfo_processInfo ? orig_NSProcessInfo_processInfo(self, _cmd) : nil;
-    NSLog(@"[HOOK] +[NSProcessInfo processInfo] => %p (class: %s)", obj, obj ? object_getClassName(obj) : "NULL");
+    NSLog(@"[HOOK] +[NSProcessInfo processInfo] : %p (class: %s)", obj, obj ? object_getClassName(obj) : "NULL");
     return obj;
 }
 
 static pid_t hook_NSProcessInfo_processIdentifier(id self, SEL _cmd) {
     pid_t pid = orig_NSProcessInfo_processIdentifier ? orig_NSProcessInfo_processIdentifier(self, _cmd) : 0;
-    NSLog(@"[HOOK] -[NSProcessInfo processIdentifier] => %d", (int)pid);
+    NSLog(@"[HOOK] -[NSProcessInfo processIdentifier] : %d", (int)pid);
     return pid;
 }
 
 static id hook_NSProcessInfo_globallyUniqueString(id self, SEL _cmd) {
     id s = orig_NSProcessInfo_globallyUniqueString ? orig_NSProcessInfo_globallyUniqueString(self, _cmd) : nil;
-    NSLog(@"[HOOK] -[NSProcessInfo globallyUniqueString] => %@", s);
+    NSLog(@"[HOOK] -[NSProcessInfo globallyUniqueString] : %@", s);
     return s;
 }
 
 static id hook_NSProcessInfo_processName(id self, SEL _cmd) {
     id n = orig_NSProcessInfo_processName ? orig_NSProcessInfo_processName(self, _cmd) : nil;
-    NSLog(@"[HOOK] -[NSProcessInfo processName] => %@", n);
+    NSLog(@"[HOOK] -[NSProcessInfo processName] : %@", n);
     return n;
 }
 
@@ -502,32 +529,32 @@ static id hook_NSProcessInfo_environment(id self, SEL _cmd) {
         [out appendString:@"}"];
         NSLog(@"%@", out);
     } else {
-        NSLog(@"[HOOK] -[NSProcessInfo environment] => %@", env);
+        NSLog(@"[HOOK] -[NSProcessInfo environment] : %@", env);
     }
     return env;
 }
 
 static id hook_NSProcessInfo_arguments(id self, SEL _cmd) {
     id arr = orig_NSProcessInfo_arguments ? orig_NSProcessInfo_arguments(self, _cmd) : nil;
-    NSLog(@"[HOOK] -[NSProcessInfo arguments] => %@", arr);
+    NSLog(@"[HOOK] -[NSProcessInfo arguments] : %@", arr);
     return arr;
 }
 
 static NSUInteger hook_NSProcessInfo_activeProcessorCount(id self, SEL _cmd) {
     NSUInteger v = orig_NSProcessInfo_activeProcessorCount ? orig_NSProcessInfo_activeProcessorCount(self, _cmd) : 0;
-    NSLog(@"[HOOK] -[NSProcessInfo activeProcessorCount] => %lu", (unsigned long)v);
+    NSLog(@"[HOOK] -[NSProcessInfo activeProcessorCount] : %lu", (unsigned long)v);
     return v;
 }
 
 static unsigned long long hook_NSProcessInfo_physicalMemory(id self, SEL _cmd) {
     unsigned long long mem = orig_NSProcessInfo_physicalMemory ? orig_NSProcessInfo_physicalMemory(self, _cmd) : 0;
-    NSLog(@"[HOOK] -[NSProcessInfo physicalMemory] => %llu bytes", mem);
+    NSLog(@"[HOOK] -[NSProcessInfo physicalMemory] : %llu bytes", mem);
     return mem;
 }
 
 static double hook_NSProcessInfo_systemUptime(id self, SEL _cmd) {
     double up = orig_NSProcessInfo_systemUptime ? orig_NSProcessInfo_systemUptime(self, _cmd) : 0;
-    NSLog(@"[HOOK] -[NSProcessInfo systemUptime] => %f s", up);
+    NSLog(@"[HOOK] -[NSProcessInfo systemUptime] : %f s", up);
     return up;
 }
 
@@ -547,7 +574,7 @@ static NSOperatingSystemVersion hook_NSProcessInfo_operatingSystemVersion(id sel
         if (pt) patch = pt.integerValue;
     }
 
-    NSLog(@"[HOOK] -[NSProcessInfo operatingSystemVersion] => %ld.%ld.%ld", (long)major, (long)minor, (long)patch);
+    NSLog(@"[HOOK] -[NSProcessInfo operatingSystemVersion] : %ld.%ld.%ld", (long)major, (long)minor, (long)patch);
     NSOperatingSystemVersion v = { major, minor, patch };
     return v;
 }
@@ -578,11 +605,34 @@ static id hook_NSUserDefaults_objectForKey(id self, SEL _cmd, id key) {
         
         // 处理 Qimei（如果配置中有值，返回配置的值）
         if ([keyStr isEqualToString:@"kTencentStatic_Qimei"]) {
+            //原值 {"o16":"11ca09173e0e2c6121e2f5a55354fa88888","o36":"fae0c6104adffedfd37614e500001de19917"}
             NSDictionary *cfg = configDict();
-            NSString *newStr = cfg[@"q36"];
-            if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
-                NSLog(@"[HOOK] NSUserDefaults objectForKey: %@: %@ -> %@", keyStr, origValue, newStr);
-                origValue = newStr;
+            NSString *newQimei = cfg[@"q36"];
+            
+            if (newQimei && [newQimei isKindOfClass:[NSString class]] && newQimei.length > 0) {
+                // 尝试解析原始值为 JSON 字典
+                if ([origValue isKindOfClass:[NSString class]]) {
+                    NSData *jsonData = [origValue dataUsingEncoding:NSUTF8StringEncoding];
+                    NSError *jsonErr = nil;
+                    id jsonObj = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&jsonErr];
+                    
+                    if (!jsonErr && [jsonObj isKindOfClass:[NSDictionary class]]) {
+                        NSMutableDictionary *modifiedDict = (NSMutableDictionary *)jsonObj;
+                        modifiedDict[@"o16"] = newQimei;
+                        modifiedDict[@"o36"] = newQimei;
+                        
+                        // 转换回 JSON 字符串
+                        NSData *modifiedJsonData = [NSJSONSerialization dataWithJSONObject:modifiedDict options:0 error:&jsonErr];
+                        if (!jsonErr && modifiedJsonData) {
+                            NSString *modifiedJsonStr = [[NSString alloc] initWithData:modifiedJsonData encoding:NSUTF8StringEncoding];
+                            NSLog(@"[HOOK] NSUserDefaults objectForKey: %@: %@ -> %@", keyStr, origValue, modifiedJsonStr);
+                            return modifiedJsonStr;
+                        }
+                    }
+                }
+                // 如果解析失败，直接返回新值
+                NSLog(@"[HOOK] NSUserDefaults objectForKey: %@: 无法解析 JSON，直接替换为 %@", keyStr, newQimei);
+                return newQimei;
             }
             // 配置不存在或为空，返回原始值
             return origValue;
@@ -672,11 +722,33 @@ static void hook_NSUserDefaults_setObject_forKey(id self, SEL _cmd, id object, i
         // kTencentStatic_Qimei
         if ([keyStr isEqualToString:@"kTencentStatic_Qimei"]) {
             NSDictionary *cfg = configDict();
-            NSString *newStr = cfg[@"q36"];
-            // 只有当配置存在且不为空时才覆盖，否则保持原值
-            if (newStr && [newStr isKindOfClass:[NSString class]] && newStr.length > 0) {
-                NSLog(@"[HOOK] NSUserDefaults %@ %@ -> %@", keyStr, object, newStr);
-                orig_NSUserDefaults_setObject_forKey(self, _cmd, newStr, key);
+            NSString *newQimei = cfg[@"q36"];
+            // 只有当配置存在且不为空时才覆盖
+            if (newQimei && newQimei.length > 0) {
+                // 尝试解析原始值为 JSON 字典
+                if ([object isKindOfClass:[NSString class]]) {
+                    NSData *jsonData = [object dataUsingEncoding:NSUTF8StringEncoding];
+                    NSError *jsonErr = nil;
+                    id jsonObj = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&jsonErr];
+                    
+                    if (!jsonErr && [jsonObj isKindOfClass:[NSDictionary class]]) {
+                        NSMutableDictionary *modifiedDict = (NSMutableDictionary *)jsonObj;
+                        modifiedDict[@"o16"] = newQimei;
+                        modifiedDict[@"o36"] = newQimei;
+                        
+                        // 转换回 JSON 字符串
+                        NSData *modifiedJsonData = [NSJSONSerialization dataWithJSONObject:modifiedDict options:0 error:&jsonErr];
+                        if (!jsonErr && modifiedJsonData) {
+                            NSString *modifiedJsonStr = [[NSString alloc] initWithData:modifiedJsonData encoding:NSUTF8StringEncoding];
+                            NSLog(@"[HOOK] NSUserDefaults setObject:forKey: %@: %@ -> %@", keyStr, object, modifiedJsonStr);
+                            orig_NSUserDefaults_setObject_forKey(self, _cmd, modifiedJsonStr, key);
+                            return;
+                        }
+                    }
+                }
+                // 如果解析失败，直接使用新值
+                NSLog(@"[HOOK] NSUserDefaults setObject:forKey: %@: 无法解析 JSON，直接替换为 %@", keyStr, newQimei);
+                orig_NSUserDefaults_setObject_forKey(self, _cmd, newQimei, key);
             } else {
                 // 配置不存在或为空，使用原值
                 orig_NSUserDefaults_setObject_forKey(self, _cmd, object, key);
@@ -1039,6 +1111,22 @@ static void init_hooks(void) {
             }
         } else {
             NSLog(@"[HOOK] ❌ KGTencentStatistics class not found");
+        }
+
+        // TDeviceInfoUtil -GetQIMEI:
+        Class TDeviceInfoUtilClass = objc_getClass("TDeviceInfoUtil");
+        if (TDeviceInfoUtilClass) {
+            SEL sel = sel_registerName("GetQIMEI:");
+            Method m = class_getInstanceMethod(TDeviceInfoUtilClass, sel);
+            if (m) {
+                orig_TDeviceInfoUtil_GetQIMEI_ = (id (*)(id, SEL, id))method_getImplementation(m);
+                method_setImplementation(m, (IMP)hook_TDeviceInfoUtil_GetQIMEI_);
+                NSLog(@"[HOOK] ✅ hooked -[TDeviceInfoUtil GetQIMEI:]");
+            } else {
+                NSLog(@"[HOOK] ❌ -[TDeviceInfoUtil GetQIMEI:] method not found");
+            }
+        } else {
+            NSLog(@"[HOOK] ❌ TDeviceInfoUtil class not found");
         }
 
         // NSUserDefaults
