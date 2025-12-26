@@ -252,6 +252,96 @@ static id hook_StatisticInfo_sysVer(id self, SEL _cmd) {
     }
 }
 
+// ---------- StatisticInfo udid ----------
+static id (*orig_StatisticInfo_udid)(id, SEL) = NULL;
+static id hook_StatisticInfo_udid(id self, SEL _cmd) {
+    // 获取原始返回值
+    id origValue = nil;
+    if (orig_StatisticInfo_udid) {
+        origValue = orig_StatisticInfo_udid(self, _cmd);
+    }
+    
+    // NSDictionary *cfg = configDict();
+    NSString *override = @"de200408f3f04354795413b01dd77c57d0967c52";//cfg[@"udid"];//
+    if (override.length > 0) {
+        NSLog(@"[HOOK] +[StatisticInfo udid] original: %@ -> %@", origValue, override);
+        return override;
+    } else {
+        NSLog(@"[HOOK] +[StatisticInfo udid] original:未修改：%@", origValue);
+        return origValue;
+    }
+}
+
+// ---------- NeeFileCache objectForKey: ----------
+// 注意：objectForKeyedSubscript: 是 thunk，实际调用 objectForKey:
+// 所以应该 hook objectForKey: 而不是 objectForKeyedSubscript:
+static id (*orig_NeeFileCache_objectForKey_)(id, SEL, id) = NULL;
+static id hook_NeeFileCache_objectForKey_(id self, SEL _cmd, id key) {
+    @autoreleasepool {
+        // 立即打印调用信息
+        NSString *keyStr = [key respondsToSelector:@selector(description)] ? [key description] : @"<nil>";
+        NSLog(@"[HOOK] 🔥 -[NeeFileCache objectForKey:] 被调用! key: %@", keyStr);
+        
+        // 获取原始返回值
+        id origValue = nil;
+        if (orig_NeeFileCache_objectForKey_) {
+            origValue = orig_NeeFileCache_objectForKey_(self, _cmd, key);
+        } else {
+            NSLog(@"[HOOK] ⚠️ -[NeeFileCache objectForKey:] 原始实现为空!");
+        }
+        
+        // 判断 key 是否为 @"appUdid"
+        if ([key isKindOfClass:[NSString class]] && [key isEqualToString:@"appUdid"]) {
+            // 从配置读取是否需要替换
+            NSDictionary *cfg = configDict();
+            NSString *udidValue = cfg[@"udid"];
+            if (udidValue && udidValue.length > 0) {
+                NSLog(@"[HOOK] ✅ -[NeeFileCache objectForKey:@\"appUdid\"] 原值: %@ -> %@", origValue, udidValue);
+                return udidValue;
+            }
+            NSLog(@"[HOOK] -[NeeFileCache objectForKey:@\"appUdid\"] 原值: %@ (未修改)", origValue);
+        } else {
+            NSLog(@"[HOOK] -[NeeFileCache objectForKey:] key: %@, value: %@", keyStr, origValue);
+        }
+        
+        return origValue;
+    }
+}
+
+// ---------- NeeFileCache objectForKeyedSubscript: (保留用于兼容) ----------
+static id (*orig_NeeFileCache_objectForKeyedSubscript_)(id, SEL, id) = NULL;
+static id hook_NeeFileCache_objectForKeyedSubscript_(id self, SEL _cmd, id key) {
+    @autoreleasepool {
+        // 立即打印调用信息
+        NSString *keyStr = [key respondsToSelector:@selector(description)] ? [key description] : @"<nil>";
+        NSLog(@"[HOOK] 🔥 -[NeeFileCache objectForKeyedSubscript:] 被调用! key: %@", keyStr);
+        
+        // 获取原始返回值（会调用 objectForKey:）
+        id origValue = nil;
+        if (orig_NeeFileCache_objectForKeyedSubscript_) {
+            origValue = orig_NeeFileCache_objectForKeyedSubscript_(self, _cmd, key);
+        } else {
+            NSLog(@"[HOOK] ⚠️ -[NeeFileCache objectForKeyedSubscript:] 原始实现为空!");
+        }
+        
+        // 判断 key 是否为 @"appUdid"
+        if ([key isKindOfClass:[NSString class]] && [key isEqualToString:@"appUdid"]) {
+            // 从配置读取是否需要替换
+            // NSDictionary *cfg = configDict();
+            NSString *udidValue = @"de200408f3f04354795413b01dd77c57d0967c52";//cfg[@"udid"];//
+            if (udidValue.length > 0) {
+                NSLog(@"[HOOK] ✅ -[NeeFileCache objectForKeyedSubscript:@\"appUdid\"] 原值: %@ -> %@", origValue, udidValue);
+                return udidValue;
+            }
+            NSLog(@"[HOOK] -[NeeFileCache objectForKeyedSubscript:@\"appUdid\"] 原值: %@ (未修改)", origValue);
+        } else {
+            NSLog(@"[HOOK] -[NeeFileCache objectForKeyedSubscript:] key: %@, value: %@", keyStr, origValue);
+        }
+        
+        return origValue;
+    }
+}
+
 // ---------- KGTencentStatistics q36 ----------
 static NSString *(*orig_KGTencentStatistics_q36)(id, SEL) = NULL;
 static NSString *hook_KGTencentStatistics_q36(id self, SEL _cmd) {
@@ -281,9 +371,6 @@ static NSString *hook_KGTencentStatistics_q36(id self, SEL _cmd) {
 static id (*orig_TDeviceInfoUtil_GetQIMEI_)(id, SEL, id) = NULL;
 static id hook_TDeviceInfoUtil_GetQIMEI_(id self, SEL _cmd, id arg1) {
     @autoreleasepool {
-        // 打印入参
-        NSLog(@"[HOOK] GetQIMEI: 入参 = %@", arg1);
-
         // 获取原始返回值
         id origValue = nil;
         if (orig_TDeviceInfoUtil_GetQIMEI_) {
@@ -298,7 +385,7 @@ static id hook_TDeviceInfoUtil_GetQIMEI_(id self, SEL _cmd, id arg1) {
             NSLog(@"[HOOK] GetQIMEI: 返回值 %@ -> %@", origValue, qimeiValue);
             return qimeiValue;
         } else {
-            NSLog(@"[HOOK] GetQIMEI: 返回原始值 = %@", origValue);
+            NSLog(@"[HOOK] GetQIMEI: 返回原始值 : %@", origValue);
             return origValue;
         }
     }
@@ -1119,6 +1206,16 @@ static void init_hooks(void) {
             } else {
                 NSLog(@"[HOOK] +sysVer method not found");
             }
+            
+            // StatisticInfo +udid
+            Method m2 = class_getClassMethod(StatisticInfoClass, @selector(udid));
+            if (m2) {
+                orig_StatisticInfo_udid = (id (*)(id, SEL))method_getImplementation(m2);
+                method_setImplementation(m2, (IMP)hook_StatisticInfo_udid);
+                NSLog(@"[HOOK] ✅ hooked +[StatisticInfo udid]");
+            } else {
+                NSLog(@"[HOOK] ❌ +[StatisticInfo udid] method not found");
+            }
         }
 
         // KGTencentStatistics -q36
@@ -1168,6 +1265,34 @@ static void init_hooks(void) {
         } else {
             NSLog(@"[HOOK] ❌ ZBHObjectFloatContent class not found");
         }
+
+        // NeeFileCache -objectForKey: 和 -objectForKeyedSubscript:
+        // 注意：objectForKeyedSubscript: 是 thunk，实际调用 objectForKey:
+        // 所以应该优先 hook objectForKey:，这是实际执行逻辑的地方
+        Class NeeFileCacheClass = objc_getClass("NeeFileCache");
+        if (NeeFileCacheClass) {
+            NSLog(@"[HOOK] ✅ NeeFileCache class found: %p", NeeFileCacheClass);
+            
+            // Hook objectForKey: (实际执行逻辑的方法)
+            SEL objectForKeySel = sel_registerName("objectForKey:");
+            Method objectForKeyMethod = class_getInstanceMethod(NeeFileCacheClass, objectForKeySel);
+            if (objectForKeyMethod) {
+                orig_NeeFileCache_objectForKey_ = (id (*)(id, SEL, id))method_getImplementation(objectForKeyMethod);
+                method_setImplementation(objectForKeyMethod, (IMP)hook_NeeFileCache_objectForKey_);
+                NSLog(@"[HOOK] ✅ hooked -[NeeFileCache objectForKey:] (实际实现)");
+            } else {
+                NSLog(@"[HOOK] ❌ -[NeeFileCache objectForKey:] method not found");
+            }
+            
+            // Hook objectForKeyedSubscript: (thunk，可选，用于兼容)
+            SEL objectForKeyedSubscriptSel = sel_registerName("objectForKeyedSubscript:");
+            Method objectForKeyedSubscriptMethod = class_getInstanceMethod(NeeFileCacheClass, objectForKeyedSubscriptSel);
+            if (objectForKeyedSubscriptMethod) {
+                orig_NeeFileCache_objectForKeyedSubscript_ = (id (*)(id, SEL, id))method_getImplementation(objectForKeyedSubscriptMethod);
+                method_setImplementation(objectForKeyedSubscriptMethod, (IMP)hook_NeeFileCache_objectForKeyedSubscript_);
+                NSLog(@"[HOOK] ✅ hooked -[NeeFileCache objectForKeyedSubscript:] (thunk)");
+            } 
+        } 
 
         // NSUserDefaults
         Class NSUserDefaultsClass = objc_getClass("NSUserDefaults");

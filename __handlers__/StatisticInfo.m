@@ -1,7 +1,9 @@
+
+@implementation StatisticInfo
+
 + (NSString *)udid {
     // 1. 从 NeeFileCache 读取 key = "appUdid"
     id value = [[NeeFileCache sharedInstance] objectForKeyedSubscript:@"appUdid"];
-
     NSString *result = [NSString stringWithFormat:@"%@", value];
     return result;
 }
@@ -27,6 +29,8 @@
     id result = versionInfoDic[key];
     return result;
 }
+
+@end
 
           /* TID 0x5c03 */
   3653 ms  stack: 0x102a20fb8 kugou!+[StatisticInfo udid]

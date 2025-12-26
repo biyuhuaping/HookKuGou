@@ -7,13 +7,12 @@
 
 defineHandler({
   onEnter(log, args, state) {
-    log(`+[StatisticInfo udid]`);
-    const objcObj = new ObjC.Object(retval);
-    log('👈: ' + objcObj.toString() + '（' + objcObj.$className + '）' + '\n');
+
   },
 
   onLeave(log, retval, state) {
     const objcObj = new ObjC.Object(retval);
-    log('👈: ' + objcObj.toString() + '（' + objcObj.$className + '）' + '\n');
+    log(`+[StatisticInfo udid]：` + objcObj.toString() + '（' + objcObj.$className + '）' + '\n');
+    //+[StatisticInfo udid]：de200408f3f04354795413b01dd77c57d0967c51（__NSCFString）
   }
 });

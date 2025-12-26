@@ -22,7 +22,7 @@
 @interface TDMQimeiService : NSObject
 @property (nonatomic, strong) NSString *cachedQimei;
 @property (nonatomic, strong) TDMQimeiService *qimeiService;
-@property (nonatomic, strong) TDMQimeiHandler *handler;
+
 @end
 
 @implementation TDMQimeiService

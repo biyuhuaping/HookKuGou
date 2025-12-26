@@ -5,85 +5,95 @@
 @implementation ZBHTextWindowCount
 
 - (void)launchRDelivery {
-    // 1. 创建依赖组件容器
-    RDeliveryDepends *depends = [[RDeliveryDepends alloc] init];
-    
-    // 2. 设置网络实现
-    id httpImpl = [RDNetworkImpl sharedInstance];
-    [depends setHttpImpl:httpImpl];
-    
-    // 3. 设置日志实现
-    id logImpl = [RDLoggerImpl sharedInstance];
-    [depends setLogImpl:logImpl];
-    
-    // 4. 设置键值存储实现
-    id kvImpl = [RDMMKVFactoryImpl sharedInstance];
-    [depends setKvImpl:kvImpl];
-    
-    // 5. 设置JSON模型实现
-    id jsonModelImpl = [RDeliveryJsonModelImpl sharedInstance];
-    [depends setJsonModelImpl:jsonModelImpl];
-    
-    // 6. 创建SDK设置
-    id jumpAllModeImpl = [self jumpAllModeImpl];
-    NSString *appId = [jumpAllModeImpl makeDoubleFromProcessor];
-    NSString *appKey = [jumpAllModeImpl appKey];
-    NSString *guid = [jumpAllModeImpl uid];
-    
+    RDeliveryDepends *depends = [RDeliveryDepends new];
+    depends.httpImpl = [RDNetworkImpl sharedInstance];//设置网络实现
+    depends.logImpl  = [RDLoggerImpl sharedInstance];//设置日志实现
+    depends.kvImpl   = [RDMMKVFactoryImpl sharedInstance];//设置键值存储实现
+    depends.jsonModelImpl = [RDeliveryJsonModelImpl sharedInstance];//设置JSON模型实现
+
+    // 3. 从 jumpAllModeImpl 拿各种运行参数
+    ZBHTextWindowCount *jump = [self jumpAllModeImpl];
+    NSString *appId     = [jump makeDoubleFromProcessor];
+    NSString *appKey    = [jump appKey];//b1ec752-1349-49af-aacb-f9d25197bce9（__NSCFString）
+    NSString *guid      = [jump uid];//:11ca09173e0e2c6121e2f5a55354fa88888（__NSCFString）
+    NSString *appVer    = [jump appVersion];//20449（NSTaggedPointerString）
+    NSString *qimei     = [jump deviceID];//:de200408f3f04354795413b01dd77c57d0967c52（__NSCFString）
+    NSString *sysVer    = [jump systemVersion];//15.2（NSTaggedPointerString）
+
+    // appId = @"10021"
     RDeliverySDKSettings *settings = [RDeliverySDKSettings settingWithAppId:appId
-                                                                   systemId:@"10021"
-                                                                    appKey:appKey
-                                                                      guid:guid
-                                                                  depends:depends];
-    
-    // 7. 设置应用版本
-    jumpAllModeImpl = [self jumpAllModeImpl];
-    NSString *appVersion = [jumpAllModeImpl appVersion];
-    [settings setAppVersion:appVersion];
-    
-    // 8. 设置设备ID
-    jumpAllModeImpl = [self jumpAllModeImpl];
-    NSString *deviceID = [jumpAllModeImpl deviceID];
-    [settings setQimei:deviceID];
-    
-    // 9. 设置环境ID
-    id envId = [objc_getClass("SomeClass") someStaticValue];
-    jumpAllModeImpl = [self jumpAllModeImpl];
-    BOOL isRealRightButton = [jumpAllModeImpl setRealRightButton];
-    
-    if (isRealRightButton) {
-        envId = [objc_getClass("AnotherClass") anotherStaticValue];
+                             systemId:@"10021"
+                                appKey:appKey
+                                  guid:uid
+                               depends:depends];
+                               
+    // 4. 填充 settings
+    settings.appVersion    = appVersion;
+    settings.qimei         = qimei;
+    settings.updateMode    = 15;
+    settings.updateDuration = 14400.0;
+    settings.systemVersion = sysVer;
+    settings.platform      = 3;//平台 iOS
+    settings.pullTarget    = 1;//拉取目标
+
+   // 5. 环境判断
+    NSString *envId = kRDeliveryEnvTest;
+    if ([jump setRealRightButton]) {
+        envId = kRDeliveryEnvProd;
     }
-    [settings setEnvId:envId];
-    
-    // 10. 设置更新模式
-    [settings setUpdateMode:0xF]; // 15 = 所有模式启用
-    [settings setUpdateDuration:300.0]; // 5分钟
-    
-    // 11. 设置系统版本
-    jumpAllModeImpl = [self jumpAllModeImpl];
-    NSString *systemVersion = [jumpAllModeImpl systemVersion];
-    [settings setSystemVersion:systemVersion];
-    
-    // 12. 设置平台和拉取目标
-    [settings setPlatform:3]; // iOS平台
-    [settings setPullTarget:1]; // 生产环境
-    
-    // 13. 创建并启动RDelivery SDK
+    settings.envId = envId;
+
+    // 10. 创建 SDK
     RDeliverySDK *sdk = [RDeliverySDK createSDKWithSettings:settings];
-    [self setRdelivery:sdk];
-    
-    // 14. 清理资源
-    [depends release];
+    self.rdelivery = sdk;
 }
 
-- (ZBHObjectFloatContent *)jumpAllModeImpl {
+
+- (ZBHTextWindowCount *)jumpAllModeImpl {
     return [self _jumpAllModeImpl];  // 直接返回实例变量
 }
 
 // 等效的ARC代码：
-- (void)setJumpAllModeImpl:(ZBHObjectFloatContent *)jumpAllModeImpl {
+- (void)setJumpAllModeImpl:(ZBHTextWindowCount *)jumpAllModeImpl {
     if (_jumpAllModeImpl != jumpAllModeImpl) {
         _jumpAllModeImpl = jumpAllModeImpl;
     }
 }
+
+
+- (void)updateUid:(NSString *)uid {
+    // 1. 检查条件，如果满足条件则直接返回
+    if (sub_10CDB2A9C() & 1) {
+        [uid release];
+        return;
+    }
+    
+    // 2. 获取队列并异步执行
+    dispatch_queue_t queue = [self queue];
+    dispatch_async(queue, ^{
+        @autoreleasepool {
+            // 3. 记录日志
+            const char *uidCStr = [uid UTF8String];
+            NSLog(@"[R CONFIG] update uid %s", uidCStr);
+            
+            // 4. 检查是否需要更新
+            ZBHObjectFloatContent *config = [self jumpAllModeImpl];
+            NSString *currentUid = [config uid];
+            
+            if ( {
+                // 5. 更新配置中的用户ID
+                [config setUid:uid];
+                
+                // 6. 通知RDelivery SDK切换用户
+                RDeliverySDK *rdelivery = [self rdelivery];
+                [rdelivery switchGuid:uid];
+                
+                // 7. 请求新的配置并下载
+                [self reqeustSettingsAndDownload];
+            }
+        }
+    });
+}
+
+
+@end

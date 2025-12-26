@@ -7,16 +7,16 @@
 
 defineHandler({
   onEnter(log, args, state) {
-    const objcObj = new ObjC.Object(args[2]);
-    this.objcObj = objcObj;
+    this.objcObj = new ObjC.Object(args[2]);
     // log(`-[NeeFileCache objectForKeyedSubscript:${objcObj.toString()}]`);
   },
 
   onLeave(log, retval, state) {
-    if (this.objcObj.toString().includes('appUdid')){
-      const objcObj = new ObjC.Object(retval);
-      log(`NeeFileCache key: ${this.objcObj.toString()} value: ${objcObj.toString()}`);
-      log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
-    }
+    const ret = new ObjC.Object(retval);
+    log(`NeeFileCache key: ${this.objcObj.toString()} value: ${ret.toString()}(${ret.$className})`);//
+    // if (this.objcObj.toString().includes('appUdid')){
+    //   log(`NeeFileCache key: ${this.objcObj.toString()} value: ${ret.toString()}`);
+    //   log('stack: '+ Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
+    // }
   }
 });

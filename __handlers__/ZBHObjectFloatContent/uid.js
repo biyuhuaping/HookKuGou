@@ -12,6 +12,7 @@ defineHandler({
 
   onLeave(log, retval, state) {
     const objcObj = new ObjC.Object(retval);
-    log('-[ZBHObjectFloatContent uid]'+ objcObj.toString() + '（' + objcObj.$className + '）');
+    log('-[ZBHObjectFloatContent uid]:'+ objcObj.toString() + '（' + objcObj.$className + '）');
+    // log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
   }
 });
