@@ -16,3 +16,209 @@
 0x11d5a3d74 TDataMaster!TDM::TDataMasterReporter::ProcessSingleThread(void*)
 0x11d5a34d0 TDataMaster!TDM::TDataMasterReporter::ProcessThread(void*)
 0x20b080060 libsystem_pthread.dylib!_pthread_start
+
+
+
+
+  2917 ms  👉 JSON -> NSData 入参__NSDictionaryM{
+    appID = 27ad641a44;
+    configType = 0;
+    context = "H4sIAAAAAAAA/+IS4Oi+ryvEJdAlotD4aAujB6OWglGiqaGRkVmSQZKJiZGRcXJqqomFQYpRoomlkWVqalIiAAAA//8BAAD//7lxhZ00AAAA";
+    env = "";
+    pullParams =     {
+        customProperties =         {
+        };
+        isDebugPackage = 0;
+        properties =         {
+            appVersion = 20449;
+            bundleId = "com.kugou.kugou1002";
+            guid = 11ca09173e0e2c6121e2f5a55354fa88888;
+            is64Bit = 1;
+            language = "zh-Hans";
+            manufacturer = Apple;
+            model = Unknown;
+            osVersion = "15.2";
+            platform = 3;
+            qimei = de200408f3f04354795413b01dd77c57d0967c52;
+            sdkVersion = "1.3.1.2";
+            uniqueId = "B4A1FE54-4E9B-47BD-842A-543327EEA506";
+        };
+    };
+    pullType = 4;
+    sign = 658065ed35d0536729ff3e83570c928c;
+    systemID = 10021;
+    target = 1;
+    taskChecksum = 2961665;
+    timestamp = 1766820212;
+}
+  2917 ms  0x11b7be574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11e5b9ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x11b9b1540 KGThirdParty!-[NSObject(YYModel) yy_modelToJSONData]
+0x110ff9de8 kugou!-[RDeliveryJsonModelMediator modelToJSONData:]
+0x1110017bc kugou!-[RDHttpSession pullConfigRequestWithTask:]
+0x111000830 kugou!0xcd84830 (0x10cd84830)
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5d9b2c libdispatch.dylib!_dispatch_queue_override_invoke
+0x1ca5e6d48 libdispatch.dylib!_dispatch_root_queue_drain
+0x1ca5e7514 libdispatch.dylib!_dispatch_worker_thread2
+0x20b07eb14 libsystem_pthread.dylib!_pthread_wqthread
+
+
+
+
+           /* TID 0x6a07 */
+  8166 ms  👉 JSON -> NSData 入参__NSDictionaryM{
+    appID = 27ad641a44;
+    configType = 0;
+    context = "H4sIAAAAAAAA/+IS4Oi+ryvEJdAlotD4aAujB6OWglGiqaGRkVmSQZKJiZGRcXJqqomFQYpRoomlkWVqalIiAAAA//8BAAD//7lxhZ00AAAA";
+    env = "";
+    pullParams =     {
+        customProperties =         {
+        };
+        isDebugPackage = 0;
+        keys =         (
+            "fix_portal_27ad641a44"
+        );
+        properties =         {
+            appVersion = 20449;
+            bundleId = "com.kugou.kugou1002";
+            guid = 11ca09173e0e2c6121e2f5a55354fa88888;
+            is64Bit = 1;
+            language = "zh-Hans";
+            manufacturer = Apple;
+            model = Unknown;
+            osVersion = "15.2";
+            platform = 3;
+            qimei = de200408f3f04354795413b01dd77c57d0967c52;
+            sdkVersion = "1.3.1.2";
+            uniqueId = "B4A1FE54-4E9B-47BD-842A-543327EEA506";
+        };
+    };
+    pullType = 3;
+    sign = 20edc54e635f75c60665ae3d11f4c308;
+    systemID = 10021;
+    target = 1;
+    timestamp = 1766820217;
+}
+  8166 ms  0x11b7be574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11e5b9ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x11b9b1540 KGThirdParty!-[NSObject(YYModel) yy_modelToJSONData]
+0x110ff9de8 kugou!-[RDeliveryJsonModelMediator modelToJSONData:]
+0x1110017bc kugou!-[RDHttpSession pullConfigRequestWithTask:]
+0x111000830 kugou!0xcd84830 (0x10cd84830)
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5d9b2c libdispatch.dylib!_dispatch_queue_override_invoke
+0x1ca5e6d48 libdispatch.dylib!_dispatch_root_queue_drain
+0x1ca5e7514 libdispatch.dylib!_dispatch_worker_thread2
+0x20b07eb14 libsystem_pthread.dylib!_pthread_wqthread
+
+
+
+
+
+
+
+
+
+
+
+
+JSON -> NSData 入参__NSDictionaryI{
+    adEndPos = 0;
+    adStartPos = 0;
+    "device_info" =     {
+        "c_device" = "iPhone 8 Plus";
+        "c_dpi" = 320;
+        "c_h" = 896;
+        "c_isjailbroken" = 0;
+        "c_ori" = 1;
+        "c_os" = ios;
+        "c_osver" = "15.2";
+        "c_pkgname" = "com.kugou.kugou1002";
+        "c_sdfree" = 38967271424;
+        "c_w" = 414;
+        carrier = 0;
+        conn = 1;
+        "deep_link_version" = 1;
+        "device_ext" =         {
+            "attri_info" =             {
+                iv = "FDE13E38-C65A-4C5A-B61D-D5C28F5BB290";
+                ua = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
+            };
+            "configure_ability" =             {
+                "support_cdn_xj_native" = 0;
+                "support_ios_sk_adnetwork" = 1;
+                "support_sharp_picture" = 0;
+            };
+            "jump_ability" =             (
+                9999
+            );
+            "qaid_info" =             {
+                cy = CN;
+                dit = "1745316676.004600880";
+                dm = D211AP;
+                "dn_h" = ecfeaec4f2c91969234a6ee458cd8e94;
+                hd = 63978983424;
+                la = "zh-Hans";
+                ma = "iPhone12,1";
+                mnt = "37D3D831047B500B7CC18703858F253BF0F7B11AA357CD89CA5B30EE28172EE123A97FE79244CA6C38727E3E54340F39@/dev/disk1s1";
+                pm = 3118071808;
+                st = 1762952775;
+                sut = "1745316707.631176";
+                tz = 28800;
+            };
+            qi36 = 11ca09173e0e2c6121e2f5a55354fa88888;
+            "report_source" = 2;
+            "targeting_ability" =             {
+                "support_app_preorder" = 1;
+                "support_c2s" = 1;
+                "support_mini_program_type" =                 (
+                    3
+                );
+                "support_wechat_canvas" = 1;
+                "web_wx_canvas" = 1;
+                "web_wx_mgame" = 1;
+            };
+        };
+        "device_info" =         {
+            "device_model_type" = 1;
+        };
+        hostappid = 1109804887;
+        hostver = "20.4.4";
+        lat = 0;
+        lng = 0;
+        m11 = 0101869F1E7A37865B874F3677ACF500152D0FEB1F1199B34F64003A742CDFE337D65689362F2EF2CC5ED62A;
+        m12 = MCaYkcIMLSNXqjq3MaRNCMAyoAXQKOHQQFoMuAE8Vnz0B8ZT5Ot0C3PkMMbBt6pA;
+        muid = 8696bb338c8fca51896b34d4aecc0014;
+        muidtype = 2;
+        "opensdk_ver" = "2.0.4";
+        "sdk_st" = 2;
+        sdkver = "4.835.0";
+        "source_from" = 1109804887;
+        tmpallpt = 1;
+        v =         {
+            ap = 0;
+            rt = 0;
+        };
+        "wx_installed" = 1;
+    };
+}
+
+  2572 ms  0x117f8a574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11ad85ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x10da68e74 kugou!+[TMEAdJSONUtil jsonStringFromDic:]
+0x10dafd550 kugou!+[TMEAdOperateRequestCgi p_handleLiuJinPBReqBody:reqSeq:reportDic:]
+0x10dafc554 kugou!+[TMEAdOperateRequestCgi p_requestAdInfoFromLiuJinPB:complate:failure:]
+0x10daf8b2c kugou!+[TMEAdOperateRequestCgi requsetOperateAd:complate:failure:]
+0x10dae2e64 kugou!-[TMEAdOperateSplashManager p_prePickOnlineWithAdSplashModel:complete:]
+0x10dae22c0 kugou!-[TMEAdOperateSplashManager p_prePickAdWithAdSplashModel:complete:completeOnline:]
+0x10dae0148 kugou!-[TMEAdOperateSplashManager prePickOperateShplashWithModel:complete:completeOnline:]
+0x10dc88e0c kugou!-[TMEAdSplashOperateHandler preLoadSplashOrder:completeOnline:]
+0x10dc6ee54 kugou!-[TMEAdOperateSplash preLoadTMESplash]
+0x10dc6e570 kugou!0xd226570 (0x10d226570)
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5dd854 libdispatch.dylib!_dispatch_lane_serial_drain$VARIANT$armv81
+0x1ca5de2e4 libdispatch.dylib!_dispatch_lane_invoke$VARIANT$armv81

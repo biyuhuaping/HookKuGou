@@ -5,6 +5,8 @@
  * For full API reference, see: https://frida.re/docs/javascript-api/
  */
 //使用方法 frida-trace -U -f com.kugou.kugou1002 -m "+[NSJSONSerialization dataWithJSONObject:options:error:]"
+// frida-trace -D fa6f4e5a190858ab2441952057f189eb5c15b595 -f com.kugou.kugou1002 -m "+[NSJSONSerialization dataWithJSONObject:options:error:]"
+
 
 defineHandler({
   onEnter(log, args, state) {
@@ -12,12 +14,12 @@ defineHandler({
     // log("👉 JSON -> NSData 入参:" + ObjC.Object(args[2]));
 
     const dic = ObjC.Object(args[2]);
-    log("👉 JSON -> NSData 入参" + dic.$className + dic);
-    // const key = ObjC.classes.NSString.stringWithString_("dev");
-    // if (dic.objectForKey_(key) !== null) {
-      // log("👉 JSON -> NSData 入参" + dic.$className + dic);
-      // log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
-    // }
+    // log("👉 JSON -> NSData 入参" + dic.$className + dic);
+    const key = ObjC.classes.NSString.stringWithString_("device_info");
+    if (dic.objectForKey_(key) !== null) {
+      log("👉 JSON -> NSData 入参" + dic.$className + dic);
+      log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
+    }
   },
 
   onLeave(log, retval, state) {
