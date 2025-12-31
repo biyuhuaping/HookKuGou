@@ -222,3 +222,84 @@ JSON -> NSData 入参__NSDictionaryI{
 0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
 0x1ca5dd854 libdispatch.dylib!_dispatch_lane_serial_drain$VARIANT$armv81
 0x1ca5de2e4 libdispatch.dylib!_dispatch_lane_invoke$VARIANT$armv81
+
+
+ 10128 ms  0x119d3a574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11cb35ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x10f818e74 kugou!+[TMEAdJSONUtil jsonStringFromDic:]
+0x10f7bb0e8 kugou!+[TMEAdAdInfoService p_handleLiuJinPBReqPlacementId:loadAdParams:amsDevice:reqSeq:reportDic:]
+0x10f7b9228 kugou!+[TMEAdAdInfoService requestPBAdInfoFromLiuJinWithReqParams:complateHandle:netRspHandle:failure:]
+0x10f7b8da8 kugou!+[TMEAdAdInfoService requestPBAdInfoFromLiuJinWithReqParams:complateHandle:failure:]
+0x10f7b8c44 kugou!+[TMEAdAdInfoService requestPBAdInfoFromLiuJinWithPlacementId:realityPosId:loadAdParams:useQuic:useWNS:dnsTimeout:needZip:timeout:complateHandle:failure:]
+0x10f86f65c kugou!0xd07765c (0x10d07765c)
+0x10f86f400 kugou!-[TMEAdUnifiedNativeAdsManager requestAdInfoWithCount:complateHandle:failure:]
+0x10f86a15c kugou!-[TMEAdUnifiedNativeAdsManager loadAdWithAdCount:]
+0x10f9b9f68 kugou!-[TMEAdNativeTMEHandler loadAdDataWithCount:]
+0x10f9976b8 kugou!-[TMEAdNative loader_loadAdDataWithPlatformId:]
+0x10f97aca4 kugou!0xd182ca4 (0x10d182ca4)
+0x1be8dbf20 CoreFoundation!__NSARRAY_IS_CALLING_OUT_TO_A_BLOCK__
+0x1be906c50 CoreFoundation!-[__NSSingleObjectArrayI enumerateObjectsWithOptions:usingBlock:]
+0x10f97ab74 kugou!-[TMEAdLoaderStrategy loadAdConcurrent]
+
+
+  8002 ms  0x119d3a574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11cb35ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x10f818e74 kugou!+[TMEAdJSONUtil jsonStringFromDic:]
+0x10f8ad550 kugou!+[TMEAdOperateRequestCgi p_handleLiuJinPBReqBody:reqSeq:reportDic:]
+0x10f8ac554 kugou!+[TMEAdOperateRequestCgi p_requestAdInfoFromLiuJinPB:complate:failure:]
+0x10f8a8b2c kugou!+[TMEAdOperateRequestCgi requsetOperateAd:complate:failure:]
+0x10f8b659c kugou!+[TMEAdOperatePreLoadManager operatesPreloadWithAppConfig:config:]
+0x10f89008c kugou!-[TMEAdOperateSplashManager preloadAdWithAdSplashModel:]
+0x10fa38c44 kugou!-[TMEAdSplashOperateHandler preDownLoadSplashData]
+0x10fa1d4e0 kugou!-[TMEAdOperateSplash preDownLoadSplashData]
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5dd854 libdispatch.dylib!_dispatch_lane_serial_drain$VARIANT$armv81
+0x1ca5de2e4 libdispatch.dylib!_dispatch_lane_invoke$VARIANT$armv81
+0x1ca5e8000 libdispatch.dylib!_dispatch_workloop_worker_thread
+0x20b07eb50 libsystem_pthread.dylib!_pthread_wqthread
+
+  2762 ms  0x119d3a574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11cb35ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x10f818e74 kugou!+[TMEAdJSONUtil jsonStringFromDic:]
+0x10f8ad550 kugou!+[TMEAdOperateRequestCgi p_handleLiuJinPBReqBody:reqSeq:reportDic:]
+0x10f8ac554 kugou!+[TMEAdOperateRequestCgi p_requestAdInfoFromLiuJinPB:complate:failure:]
+0x10f8a8b2c kugou!+[TMEAdOperateRequestCgi requsetOperateAd:complate:failure:]
+0x10f892e64 kugou!-[TMEAdOperateSplashManager p_prePickOnlineWithAdSplashModel:complete:]
+0x10f8922c0 kugou!-[TMEAdOperateSplashManager p_prePickAdWithAdSplashModel:complete:completeOnline:]
+0x10f890148 kugou!-[TMEAdOperateSplashManager prePickOperateShplashWithModel:complete:completeOnline:]
+0x10fa38e0c kugou!-[TMEAdSplashOperateHandler preLoadSplashOrder:completeOnline:]
+0x10fa1ee54 kugou!-[TMEAdOperateSplash preLoadTMESplash]
+0x10fa1e570 kugou!0xd226570 (0x10d226570)
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5dd854 libdispatch.dylib!_dispatch_lane_serial_drain$VARIANT$armv81
+0x1ca5de2e4 libdispatch.dylib!_dispatch_lane_invoke$VARIANT$armv81
+
+
+
+👉 JSON -> NSData 入参__NSDictionaryM{
+    app =     {
+        an = "com.kugou.kugou1002";
+        appkey = 1109804887;
+        appv = "20.4.4";
+    };
+    dev =     {
+        did = 8696bb338c8fca51896b34d4aecc0014;
+        ebid = b185cbe6db53a6628a7174bc96ce9b56;
+        iv = "FDE13E38-C65A-4C5A-B61D-D5C28F5BB290";
+        m12 = MCaYkcIMLSNXqjq3MaRNCMAyoAXQKOHQQFoMuAE8Vnz0B8ZT5Ot0C3PkMMbBt6pA;
+        md = "iPhone12,1";
+        os = ios;
+        osv = "15.2";
+        qimei36 = 11ca09173e0e2c6121e2f5a55354fa88888;
+    };
+    sdk =     {
+        "sdk_st" = 2;
+        sdkv = "4.835.0";
+    };
+    sig =     {
+        app = 70b09c98f7e36f569284b0bb84ba7dc0;
+        sdk = 365766e94efc3a98f5f4f0974c96addf;
+    };
+}

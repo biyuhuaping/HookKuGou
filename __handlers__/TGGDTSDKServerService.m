@@ -52,30 +52,36 @@ void sendWujiRequest(id self, SEL _cmd) {
     [netClient postURL:url body:jsonData retryTimes:1 enableJSON:YES success:successBlock failure:failureBlock];
 }
 
+// 1️⃣ 构建 SDK 上报数据
 + (NSDictionary *)buildSDKReportCommonData {
-    NSMutableDictionary *result = [NSMutableDictionary dictionary];
-    
+    /// 最终上报 body
+    NSMutableDictionary *body = [NSMutableDictionary dictionary];
+
+    /// 1️⃣ App 信息
     NSMutableDictionary *appInfo = [NSMutableDictionary dictionary];
-    TGGDTDeviceManager *deviceManager = [TGGDTDeviceManager defaultManager];
-    [deviceManager collectAppInfo:appInfo];
-    
+    [[TGGDTDeviceManager defaultManager] collectAppInfo:appInfo];
+
+    /// 2️⃣ 设备信息
     NSMutableDictionary *deviceInfo = [NSMutableDictionary dictionary];
-    deviceManager = [TGGDTDeviceManager defaultManager];
-    [deviceManager collectDeviceInfo:deviceInfo];
-    
+    [[TGGDTDeviceManager defaultManager] collectDeviceInfo:deviceInfo];
+
+    /// 3️⃣ SDK 信息
     NSMutableDictionary *sdkInfo = [NSMutableDictionary dictionary];
-    deviceManager = [TGGDTDeviceManager defaultManager];
-    [deviceManager collectSDKInfo:sdkInfo];
+    [[TGGDTDeviceManager defaultManager] collectSDKInfo:sdkInfo];
+
+    /// 4️⃣ 组装主体
+    [body gdt_safeSetObject:deviceInfo forKey:@"dev"];
+    [body gdt_safeSetObject:sdkInfo    forKey:@"sdk"];
+    [body gdt_safeSetObject:appInfo    forKey:@"app"];
+
+    /// 5️⃣ 签名 / 校验字段
+    NSDictionary *sig = [[TGGDTSettingManager defaultManager] signatureDictionary];
+    [body gdt_safeSetObject:sig forKey:@"sig"];
     
-    [result gdt_safeSetObject:deviceInfo forKey:@"dev"];
-    [result gdt_safeSetObject:sdkInfo forKey:@"sdk"];
-    [result gdt_safeSetObject:appInfo forKey:@"app"];
-    
-    TGGDTSettingManager *settingManager = [TGGDTSettingManager defaultManager];
-    NSDictionary *signatureDict = [settingManager signatureDictionary];
-    [result gdt_safeSetObject:signatureDict forKey:@"sig"];
-    
+    /// 6️⃣ 异步后台任务（缓存 / 上报 / 预取配置）
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        // stru_10F571078
+        // （很可能是 setting 拉取 / 本地持久化 / 心跳）
         TGGDTInDaUseNotifyDelegate *delegate = [TGGDTInDaUseNotifyDelegate getUseNotifyDelegate];
         NSArray *focusInfo = [TGGDTInDaUseNotifyDelegate getFocusInfo];
         
@@ -109,5 +115,5 @@ void sendWujiRequest(id self, SEL _cmd) {
         }
     });
     
-    return result;
+    return body;
 }

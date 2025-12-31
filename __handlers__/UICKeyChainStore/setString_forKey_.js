@@ -78,12 +78,11 @@ defineHandler({
     log(`+[UICKeyChainStore setString:${args[2]} forKey:${args[3]}]`);
     let objcObj1 = new ObjC.Object(args[2]);
     const objcObj2 = new ObjC.Object(args[3]);
-    log('👉 ' + formatObjCObject(objcObj1));
-    log('👉 ' + formatObjCObject(objcObj2));
+    log('👉 args[2]' + formatObjCObject(objcObj1));
+    log('👉 args[3]' + formatObjCObject(objcObj2));
   },
 
   onLeave(log, retval, state) {
-    const objcObj = new ObjC.Object(retval);
-    log('👈 ' + formatObjCObject(objcObj) + '\n');
+
   }
 });

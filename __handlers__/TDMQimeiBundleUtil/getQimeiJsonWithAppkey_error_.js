@@ -7,9 +7,28 @@
 
 defineHandler({
   onEnter(log, args, state) {
-    log(`+[TDMQimeiBundleUtil getQimeiJsonWithAppkey:${args[2]} error:${args[3]}]`);
+      var p = ptr(args[2]);
+      try {
+          var obj = new ObjC.Object(p);
+          console.log('OC object:', obj.$className, obj.toString());
+      } catch (e) {
+          console.log('not OC object');
+          console.log('pointer value:', Memory.readPointer(p));
+      }
+    // obj = new ObjC.Object(args[2]);
+    // log(`+[TDMQimeiBundleUtil getQimeiJsonWithAppkey:${obj.toString()} error:${args[3]}]`);
   },
 
   onLeave(log, retval, state) {
+    // obj = new ObjC.Object(retval);
+    // log(`+[TDMQimeiBundleUtil getQimeiJsonWithAppkey: error:] = ${obj.toString()}`);
+      var p = ptr(retval);
+      try {
+          var obj = new ObjC.Object(p);
+          console.log('OC object:', obj.$className, obj.toString());
+      } catch (e) {
+          console.log('not OC object');
+          console.log('pointer value:', Memory.readPointer(p));
+      }
   }
 });

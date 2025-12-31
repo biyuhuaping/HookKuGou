@@ -79,14 +79,13 @@ defineHandler({
     let objcObj1 = new ObjC.Object(args[2]);
     const objcObj2 = new ObjC.Object(args[3]);
     const objcObj3 = new ObjC.Object(args[4]);
-    const objcObj4 = new ObjC.Object(args[5]);
-    log('👉 ' + formatObjCObject(objcObj1)); 
-    log('👉 ' + formatObjCObject(objcObj2));
-    log('👉 ' + formatObjCObject(objcObj3));
-    log('👉 ' + formatObjCObject(objcObj4));
+    log('👉 args[2]:' + `${objcObj1.toString()} (${objcObj1.$className})`); 
+    log('👉 args[3]:' + `${objcObj2.toString()} (${objcObj2.$className})`);
+    log('👉 args[4]:' + `${objcObj3.toString()} (${objcObj3.$className})`);
+    log('👉 args[5]:' + args[5]);
+    log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
   },
   onLeave(log, retval, state) {
-    const objcObj = new ObjC.Object(retval);
-    log('👈 ' + formatObjCObject(objcObj) + '\n');
+    
   }
 });

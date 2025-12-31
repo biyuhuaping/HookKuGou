@@ -5,6 +5,9 @@
  * For full API reference, see: https://frida.re/docs/javascript-api/
  */
 
+// frida-trace -U -f com.kugou.kugou1002 -m "-[KGTencentStatistics q36]" -i CCCrypt
+// frida-trace -D fa6f4e5a190858ab2441952057f189eb5c15b595 -f com.kugou.kugou1002 -m "-[KGTencentStatistics q36]" -i CCCrypt
+
 defineHandler(/**
   * 完整的十六进制+文本显示的CCCrypt监控脚本
   * 数据同时展示十六进制和可打印文本，不包含二进制格式

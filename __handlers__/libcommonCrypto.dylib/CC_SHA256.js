@@ -5,6 +5,9 @@
  * For full API reference, see: https://frida.re/docs/javascript-api/
  */
 
+// frida-trace -U -f com.kugou.kugou1002 -m "-[KGTencentStatistics q36]" -i "CC_MD5"
+// frida-trace -D fa6f4e5a190858ab2441952057f189eb5c15b595 -f com.kugou.kugou1002 -m "-[KGTencentStatistics q36]" -i "CC_MD5" 
+
 defineHandler({
   onEnter(log, args, state) {
     log(`CC_SHA256(data=${args[0]}, len=${args[1]}, md=${args[2]})`);

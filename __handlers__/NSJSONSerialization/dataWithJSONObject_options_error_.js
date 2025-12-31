@@ -15,10 +15,10 @@ defineHandler({
 
     const dic = ObjC.Object(args[2]);
     // log("👉 JSON -> NSData 入参" + dic.$className + dic);
-    const key = ObjC.classes.NSString.stringWithString_("device_info");
+    const key = ObjC.classes.NSString.stringWithString_("Kgsign");
     if (dic.objectForKey_(key) !== null) {
       log("👉 JSON -> NSData 入参" + dic.$className + dic);
-      log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n'));
+      log(Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n')+ '\n');
     }
   },
 

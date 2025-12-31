@@ -1,0 +1,198 @@
+👉 JSON -> NSData 入参__NSDictionaryM{
+    app =     {
+        an = "com.kugou.kugou1002";
+        appkey = 1109804887;
+        appv = "20.4.4";
+    };
+    dev =     {
+        did = 8696bb338c8fca51896b34d4aecc0014;
+        ebid = b185cbe6db53a6628a7174bc96ce9b56;
+        iv = "FDE13E38-C65A-4C5A-B61D-D5C28F5BB290";
+        m12 = MCaYkcIMLSNXqjq3MaRNCMAyoAXQKOHQQFoMuAE8Vnz0B8ZT5Ot0C3PkMMbBt6pA;
+        md = "iPhone12,1";
+        os = ios;
+        osv = "15.2";
+        qimei36 = fae0c6104adffedfd37614e500001de19918;
+    };
+    sdk =     {
+        "sdk_st" = 2;
+        sdkv = "4.835.0";
+    };
+    sig =     {
+        app = 3bd7cf9858b84d383eab4740a0f22770;
+        sdk = 90adf0541e3d7f5ca52d6372b90aeedb;
+    };
+}
+👉 JSON -> NSData 入参__NSDictionaryM{
+    app =     {
+        an = "com.kugou.kugou1002";
+        appkey = 1109804887;
+        appv = "20.4.4";
+    };
+    dev =     {
+        did = 8696bb338c8fca51896b34d4aecc0014;
+        ebid = b185cbe6db53a6628a7174bc96ce9b56;
+        iv = "FDE13E38-C65A-4C5A-B61D-D5C28F5BB290";
+        m12 = MCaYkcIMLSNXqjq3MaRNCMAyoAXQKOHQQFoMuAE8Vnz0B8ZT5Ot0C3PkMMbBt6pA;
+        md = "iPhone12,1";
+        os = ios;
+        osv = "15.2";
+        qimei36 = fae0c6104adffedfd37614e500001de19918;
+        td = 0101869FE4589E6670541972BCBB0C022E0DFD584F444F54711EDD0FCC2DAF2D78CE6B5E92F173B90158B238;
+    };
+    sdk =     {
+        "sdk_st" = 2;
+        sdkv = "4.835.0";
+    };
+    sig =     {
+        app = 3bd7cf9858b84d383eab4740a0f22770;
+        sdk = 90adf0541e3d7f5ca52d6372b90aeedb;
+    };
+}
+👉 JSON -> NSData 入参__NSDictionaryM{
+    app =     {
+        an = "com.kugou.kugou1002";
+        appkey = 1109804887;
+        appv = "20.4.4";
+    };
+    dev =     {
+        did = 8696bb338c8fca51896b34d4aecc0014;
+        ebid = b185cbe6db53a6628a7174bc96ce9b56;
+        iv = "FDE13E38-C65A-4C5A-B61D-D5C28F5BB290";
+        m12 = MCaYkcIMLSNXqjq3MaRNCMAyoAXQKOHQQFoMuAE8Vnz0B8ZT5Ot0C3PkMMbBt6pA;
+        md = "iPhone12,1";
+        os = ios;
+        osv = "15.2";
+        qimei36 = fae0c6104adffedfd37614e500001de19918;
+        td = 0101869FE4589E6670541972BCBB0C022E0DFD584F444F54711EDD0FCC2DAF2D78CE6B5E92F173B90158B238;
+    };
+    sdk =     {
+        "sdk_st" = 2;
+        sdkv = "4.835.0";
+    };
+    sig =     {
+        app = 3bd7cf9858b84d383eab4740a0f22770;
+        sdk = 90adf0541e3d7f5ca52d6372b90aeedb;
+    };
+}
+👉 JSON -> NSData 入参__NSDictionaryM{
+    app =     {
+        an = "com.kugou.kugou1002";
+        appkey = 1109804887;
+        appv = "20.4.4";
+    };
+    dev =     {
+        did = 8696bb338c8fca51896b34d4aecc0014;
+        ebid = b185cbe6db53a6628a7174bc96ce9b56;
+        iv = "FDE13E38-C65A-4C5A-B61D-D5C28F5BB290";
+        m12 = MCaYkcIMLSNXqjq3MaRNCMAyoAXQKOHQQFoMuAE8Vnz0B8ZT5Ot0C3PkMMbBt6pA;
+        md = "iPhone12,1";
+        os = ios;
+        osv = "15.2";
+        qimei36 = fae0c6104adffedfd37614e500001de19918;
+        td = 0101869FE4589E6670541972BCBB0C022E0DFD584F444F54711EDD0FCC2DAF2D78CE6B5E92F173B90158B238;
+    };
+    sdk =     {
+        "sdk_st" = 2;
+        sdkv = "4.835.0";
+    };
+    sig =     {
+        app = 3bd7cf9858b84d383eab4740a0f22770;
+        sdk = 90adf0541e3d7f5ca52d6372b90aeedb;
+    };
+}
+0x11a4aa574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11d2a5ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x103575588 kugou!+[TGGDTJSONUtil jsonStringFromObject:]
+0x1035757fc kugou!+[TGGDTJSONUtil jsonDataFromObject:]
+0x1035ecfc8 kugou!0x684fc8 (0x100684fc8)+[TGGDTSDKServerService updateNewSetting]
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5d9b2c libdispatch.dylib!_dispatch_queue_override_invoke
+0x1ca5e6d48 libdispatch.dylib!_dispatch_root_queue_drain
+0x1ca5e7514 libdispatch.dylib!_dispatch_worker_thread2
+0x20b07eb14 libsystem_pthread.dylib!_pthread_wqthread
+
+
+0x11a4aa574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11d2a5ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x103575588 kugou!+[TGGDTJSONUtil jsonStringFromObject:]
+0x1035757fc kugou!+[TGGDTJSONUtil jsonDataFromObject:]
+0x1035ecfc8 kugou!0x684fc8 (0x100684fc8)+[TGGDTSDKServerService updateNewSetting]
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5d9b2c libdispatch.dylib!_dispatch_queue_override_invoke
+0x1ca5e6d48 libdispatch.dylib!_dispatch_root_queue_drain
+0x1ca5e7514 libdispatch.dylib!_dispatch_worker_thread2
+0x20b07eb14 libsystem_pthread.dylib!_pthread_wqthread
+
+
+0x11a4aa574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11d2a5ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x103575588 kugou!+[TGGDTJSONUtil jsonStringFromObject:]
+0x1035757fc kugou!+[TGGDTJSONUtil jsonDataFromObject:]
+0x1035ecfc8 kugou!0x684fc8 (0x100684fc8)+[TGGDTSDKServerService updateNewSetting]
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5d9b2c libdispatch.dylib!_dispatch_queue_override_invoke
+0x1ca5e6d48 libdispatch.dylib!_dispatch_root_queue_drain
+0x1ca5e7514 libdispatch.dylib!_dispatch_worker_thread2
+0x20b07eb14 libsystem_pthread.dylib!_pthread_wqthread
+
+
+0x11a4aa574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11d2a5ad0 HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x103575588 kugou!+[TGGDTJSONUtil jsonStringFromObject:]
+0x1035757fc kugou!+[TGGDTJSONUtil jsonDataFromObject:]
+0x1035ecfc8 kugou!0x684fc8 (0x100684fc8)+[TGGDTSDKServerService updateNewSetting]
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5d9b2c libdispatch.dylib!_dispatch_queue_override_invoke
+0x1ca5e6d48 libdispatch.dylib!_dispatch_root_queue_drain
+0x1ca5e7514 libdispatch.dylib!_dispatch_worker_thread2
+0x20b07eb14 libsystem_pthread.dylib!_pthread_wqthread
+
+
+
+
+  4496 ms  👉 JSON -> NSData 入参__NSDictionaryM{
+    Kgsign = 110903120449cf8e8ae8b21ea2b80e4aed64727cacaf;
+    "area_code" = 1;
+    channelid = 1009;
+    datetime = 721;
+    gitversion = ff2ffd9;
+    imei = de200408f3f04354795413b01dd77c57d0967c52;
+    "m_type" = 0;
+    md5 = cf8e8ae8b21ea2b80e4aed64727cacaf;
+    mod = "iPhone 11";
+    moontype = 0;
+    net = 1;
+    os = 1000;
+    pattern = "1,0";
+    state = 1;
+    "state_1" = "D-1";
+    sys = "iOS15.2";
+    "test_flag" = "-1";
+    transaction = "{\\\"1\\\":\\\"788788520.962701\\\",\\\"2\\\":\\\"788788521.683503\\\"}";
+    type = 110903;
+    uid = 0;
+    "user_type" = 0;
+    uuid = de200408f3f04354795413b01dd77c57d0967c52;
+    ver = 20449;
+    "vip_type" = 0;
+}
+  4496 ms  0x11c02e574 KGSafeKit!+[NSJSONSerialization(kgSwizzleGuardSafe) dataWithJSONObjectSafe:options:error:]
+0x11ee299cc HookKuGou.dylib!hook_NSJSONSerialization_dataWithJSONObject_options_error_
+0x11c02e7b8 KGSafeKit!+[NSJSONSerialization(KGClassifySafeAccess) dataWithJSONObjectKGSafe:options:error:]
+0x11c02d8d4 KGSafeKit!-[NSMutableDictionary(JSONExtensions) JSONString2]
+0x11be2cc0c KGDataChannel!-[KGAPMHttpDao sendAPMInfo:andNeeSendInfo:andBaseParam:andError:]
+0x11be29324 KGDataChannel!-[KGAPMAdapterFactory sendAMPData:andBSID:andResultString:]
+0x11be29150 KGDataChannel!-[KGAPMAdapterFactory apmProcessData:]
+0x11be29f78 KGDataChannel!-[KGAPMCenter processDataAndSend:andNodeIndex:andNodeState:andSequence:]
+0x11be29d3c KGDataChannel!__86-[KGAPMCenter markAPM:andSubCount:andNodeIndex:andSequence:andNodeState:andBussiness:]_block_invoke
+0x1ca601850 libdispatch.dylib!_dispatch_call_block_and_release
+0x1ca6027c8 libdispatch.dylib!_dispatch_client_callout
+0x1ca5dd854 libdispatch.dylib!_dispatch_lane_serial_drain$VARIANT$armv81
+0x1ca5de2e4 libdispatch.dylib!_dispatch_lane_invoke$VARIANT$armv81
+0x1ca5e8000 libdispatch.dylib!_dispatch_workloop_worker_thread
+0x20b07eb50 libsystem_pthread.dylib!_pthread_wqthread

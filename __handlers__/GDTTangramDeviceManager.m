@@ -16,8 +16,7 @@ copy params
 └─ return [extReq toMap]
 
 
-+ (NSDictionary *)getTangramDeviceInfoWithScene:(TGGDTGetDeviceParams *)params
-{
++ (NSDictionary *)getTangramDeviceInfoWithScene:(TGGDTGetDeviceParams *)params{
     // ---------- 1. copy 参数 ----------
     TGGDTGetDeviceParams *copiedParams = [HippyI18nUtils copy:params];
 
@@ -49,7 +48,6 @@ copy params
 
     // ---------- 5. 判断是否禁止获取 jsbundle ----------
     BOOL donotGetJsbundleInfo = [[TGGDTSettingManager defaultManager] appBoolObjectForKey:@"donotGetJsbundleInfo"];
-
     if (!donotGetJsbundleInfo) {
         // ---------- 6. device_ext ----------
         NSMutableDictionary *deviceExt = [NSMutableDictionary dictionary];
@@ -76,7 +74,6 @@ copy params
 
         if (jsbundleInfo.count > 0) {
             NSString *json = [TGGDTJSONUtil jsonStringFromDic:jsbundleInfo];
-
             BOOL encode = [[TGGDTSettingManager defaultManager] appBoolObjectForKey:@"jsbundleInfoEncode"];
 
             if (encode) {
@@ -88,9 +85,7 @@ copy params
 
         // ---------- 8. landing_page_js_bundle_version ----------
         NSMutableArray *landingPageBundles = [NSMutableArray array];
-
         DKDynamicBundleItem *canvasItem = [[DKDynamicBundleManger setBaseContext] moduleItemWithId:@"ad-dynamic-canvas"];
-
         if (canvasItem.version.length > 0) {
             [landingPageBundles addObject:@{
                 @"render_engine_type": @1,
@@ -105,7 +100,6 @@ copy params
 
         // ---------- 9. module_name（由 scene 决定） ----------
         NSString *moduleName = @"";
-
         switch (copiedParams.scene) {
             case 1: moduleName = @"splash"; break;
             case 2: moduleName = @"native"; break;
@@ -120,7 +114,6 @@ copy params
 
         // ---------- 10. style_render_engine_js_bundle_version ----------
         BOOL useNewDynamicProtocol = [[TGGDTSettingManager defaultManager] appBoolObjectForKey:@"useNewDynamicProtocol"];
-
         if (useNewDynamicProtocol) {
             NSMutableArray *styleBundles = [NSMutableArray array];
 
@@ -167,4 +160,21 @@ copy params
 
     // ---------- 12. 返回 ----------
     return [extReq toMap];
+}
+
+
+static id gHostDeviceInfo; // = qword_11310AAA8
+
+// ARC 版还原
+// +[GDTTangramDeviceManager getHostDeviceInfo]
+// 作用：线程安全地返回全局缓存的 HostDeviceInfo 对象（拷贝）
++ (GDTTangramHostDeviceInfo *)getHostDeviceInfo{
+    id result = nil;
+    // 使用字符串常量作为同步锁
+    @synchronized(@"gHostDeviceInfoSynchronizedToken") {
+        // qword_11310AAA8：全局静态保存的 HostDeviceInfo 对象
+        // HippyI18nUtils copy：等价于 [obj copy]，防止外部修改内部缓存
+        result = [((id)qword_11310AAA8) copy];
+    }
+    return result;
 }

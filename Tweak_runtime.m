@@ -261,8 +261,8 @@ static id hook_StatisticInfo_udid(id self, SEL _cmd) {
         origValue = orig_StatisticInfo_udid(self, _cmd);
     }
     
-    // NSDictionary *cfg = configDict();
-    NSString *override = @"de200408f3f04354795413b01dd77c57d0967c52";//cfg[@"udid"];//
+    NSDictionary *cfg = configDict();
+    NSString *override = cfg[@"udid"];//de200408f3f04354795413b01dd77c57d0967c51
     if (override.length > 0) {
         NSLog(@"[HOOK] +[StatisticInfo udid] original: %@ -> %@", origValue, override);
         return override;
@@ -327,8 +327,8 @@ static id hook_NeeFileCache_objectForKeyedSubscript_(id self, SEL _cmd, id key) 
         // 判断 key 是否为 @"appUdid"
         if ([key isKindOfClass:[NSString class]] && [key isEqualToString:@"appUdid"]) {
             // 从配置读取是否需要替换
-            // NSDictionary *cfg = configDict();
-            NSString *udidValue = @"de200408f3f04354795413b01dd77c57d0967c52";//cfg[@"udid"];//
+            NSDictionary *cfg = configDict();
+            NSString *udidValue = cfg[@"udid"];//de200408f3f04354795413b01dd77c57d0967c51
             if (udidValue.length > 0) {
                 NSLog(@"[HOOK] ✅ -[NeeFileCache objectForKeyedSubscript:@\"appUdid\"] 原值: %@ -> %@", origValue, udidValue);
                 return udidValue;
@@ -1049,6 +1049,92 @@ static void hook_NSJSONSerialization_dataWithJSONObject_options_error_method(voi
     }
 }
 
+// ---------- Hook +[TDMQimeiBundleUtil getPasswordForUsername: andServiceName: accAttribute: error:] ----------
+static id (*orig_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_)(id, SEL, id, id, id, NSError **) = NULL;
+static id hook_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_(id self, SEL _cmd, id username, id serviceName, id accAttribute, NSError **error) {
+    @autoreleasepool {
+        // 调用原始方法获取返回值
+        id origResult = nil;
+        if (orig_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_) {
+            origResult = orig_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_(self, _cmd, username, serviceName, accAttribute, error);
+        } else {
+            // 如果没有原始实现，尝试直接调用（不应该发生）
+            NSLog(@"[HOOK] ❌ TDMQimeiBundleUtil getPasswordForUsername:andServiceName:accAttribute:error: 原始实现未找到");
+            return nil;
+        }
+        
+        // 检查 username 是否以 "beacon.qimei" 结尾   
+        NSString *usernameStr = username;     
+        if (![usernameStr hasSuffix:@"beacon.qimei"]) {
+            // 不满足条件，直接返回原始值
+            return origResult;
+        }
+        
+        NSLog(@"[HOOK] TDMQimeiBundleUtil getPasswordForUsername:andServiceName:accAttribute:error: username=%@, 原始值: %@", usernameStr, origResult);
+        
+        // 如果返回值为 nil 或不是字符串，直接返回
+        if (!origResult || ![origResult isKindOfClass:[NSString class]]) {
+            return origResult;
+        }
+        
+        NSString *jsonStr = (NSString *)origResult;
+        if (jsonStr.length == 0) {
+            return origResult;
+        }
+        
+        // 解析 JSON 字符串
+        NSData *jsonData = [jsonStr dataUsingEncoding:NSUTF8StringEncoding];
+        NSError *jsonErr = nil;
+        id jsonObj = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingMutableContainers error:&jsonErr];
+        
+        // 如果解析成功且是字典，检查是否包含需要替换的键
+        if (!jsonErr && [jsonObj isKindOfClass:[NSDictionary class]]) {
+            NSMutableDictionary *dict = (NSMutableDictionary *)jsonObj;
+            BOOL modified = NO;
+            NSDictionary *cfg = configDict();
+            NSString *q36Value = cfg[@"q36"];
+            
+            // 替换 q16 和 q36
+            if (q36Value && q36Value.length > 0) {
+                dict[@"q16"] = q36Value;
+                dict[@"q36"] = q36Value;
+                modified = YES;
+            }
+            
+            // 如果修改了，将字典转换回 JSON 字符串
+            if (modified) {
+                NSData *modifiedJsonData = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&jsonErr];
+                if (!jsonErr && modifiedJsonData) {
+                    NSString *modifiedJsonStr = [[NSString alloc] initWithData:modifiedJsonData encoding:NSUTF8StringEncoding];
+                    if (modifiedJsonStr) {
+                        NSLog(@"[HOOK] TDMQimeiBundleUtil getPasswordForUsername:andServiceName:accAttribute:error: %@: %@ -> %@", usernameStr, origResult, modifiedJsonStr);
+                        return modifiedJsonStr;
+                    }
+                }
+            }
+        }
+        // 如果没有修改或解析失败，返回原始值
+        return origResult;
+    }
+}
+
+// 安装 Hook +[TDMQimeiBundleUtil getPasswordForUsername: andServiceName: accAttribute: error:]
+static void hook_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_method(void) {
+    Class TDMQimeiBundleUtilClass = objc_getClass("TDMQimeiBundleUtil");
+    if (TDMQimeiBundleUtilClass) {
+        SEL sel = sel_registerName("getPasswordForUsername:andServiceName:accAttribute:error:");
+        Method m = class_getClassMethod(TDMQimeiBundleUtilClass, sel);
+        if (m) {
+            orig_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_ = (id (*)(id, SEL, id, id, id, NSError **))method_getImplementation(m);
+            method_setImplementation(m, (IMP)hook_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_);
+            NSLog(@"[HOOK] ✅[TDMQimeiBundleUtil]: +getPasswordForUsername:andServiceName:accAttribute:error:");
+        } else {
+            NSLog(@"[HOOK] ❌[TDMQimeiBundleUtil]: +getPasswordForUsername:andServiceName:accAttribute:error: 方法未找到");
+        }
+    } else {
+        NSLog(@"[HOOK] ❌[TDMQimeiBundleUtil]: 类未找到");
+    }
+}
 
 // ---------- 安装 swizzle helper ----------
 static void swizzle_instance_method(Class cls, SEL sel, IMP newImp, IMP *origImpStorage, const char *types) {
@@ -1314,6 +1400,9 @@ static void init_hooks(void) {
 
         // Hook +[NSJSONSerialization dataWithJSONObject:options:error:]
         hook_NSJSONSerialization_dataWithJSONObject_options_error_method();
+        
+        // Hook +[TDMQimeiBundleUtil getPasswordForUsername: andServiceName: accAttribute: error:]
+        hook_TDMQimeiBundleUtil_getPasswordForUsername_andServiceName_accAttribute_error_method();
 
         NSLog(@"[HOOK] hooks installed");
         
